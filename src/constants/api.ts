@@ -1,0 +1,15 @@
+export const api = {
+  otp: "/api/auth/otp",
+  verify: "/api/auth/verify",
+  register: "/api/auth/register",
+  logout: "/api/auth/logout",
+  session: "/api/session",
+  catalog: "/api/catalog",
+  appointments: "/api/appointments",
+  appointment: (id: string) => `/api/appointments/${encodeURIComponent(id)}`,
+  appointmentAction: (id: string) => `/api/appointments/${encodeURIComponent(id)}/actions`,
+  track: "/api/appointments/track",
+  notifications: "/api/notifications",
+  admin: "/api/admin",
+  grievances: "/api/grievances",
+} as const;
