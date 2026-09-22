@@ -26,6 +26,7 @@ export function useAppSession(initial: AppSession | null = null) {
 
   const getSnapshot = useCallback(() => {
     const next = readBrowserSession();
+    if (!next) return snapshotRef.current;
     if (sessionsEqual(snapshotRef.current, next)) return snapshotRef.current;
     snapshotRef.current = next;
     return snapshotRef.current;

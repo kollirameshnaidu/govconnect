@@ -23,7 +23,7 @@ export default async function LoginPage({
     >
       <Card className="mx-auto max-w-md" padding="lg">
         <CitizenLoginForm
-          heading="Log in with mobile OTP"
+          heading="Log in with email and password"
           intent={intent}
           nextPath={nextPath}
         />

@@ -12,8 +12,9 @@ type TrackBody = {
 export async function POST(request: Request) {
   try {
     const body = await readJson<TrackBody>(request);
-    const appointment = await withStore(() =>
-      trackAppointment(body.appointmentId ?? "", body.mobile ?? ""),
+    const appointment = await withStore(
+      () => trackAppointment(body.appointmentId ?? "", body.mobile ?? ""),
+      { write: false },
     );
     return jsonOk({ appointment });
   } catch (error) {

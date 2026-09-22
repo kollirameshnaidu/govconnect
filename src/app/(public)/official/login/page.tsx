@@ -21,7 +21,7 @@ export default async function OfficialLoginPage({
       breadcrumbs={[{ href: routes.officialLogin, label: "Official sign-in" }]}
     >
       <Card className="mx-auto max-w-md" padding="lg">
-        <OfficialLoginForm heading="Log in with staff ID" nextPath={nextPath} />
+        <OfficialLoginForm heading="Log in with email and password" nextPath={nextPath} />
       </Card>
     </PublicPageShell>
   );

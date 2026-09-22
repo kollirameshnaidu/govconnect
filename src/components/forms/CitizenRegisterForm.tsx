@@ -1,34 +1,52 @@
 "use client";
 
 import { FormEvent, useState } from "react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Alert } from "@/components/common/Alert";
 import { Button } from "@/components/common/Button";
-import { Field, Input } from "@/components/common/FormControls";
+import { Field, Input, PasswordInput } from "@/components/common/FormControls";
 import { routes } from "@/constants/routes";
-import { setCitizenSession } from "@/lib/auth-store";
+import { isValidEmail, passwordIssue } from "@/lib/auth-rules";
 import { registerCitizen } from "@/services/authService";
 
 export function CitizenRegisterForm() {
-  const router = useRouter();
   const [name, setName] = useState("");
-  const [mobile, setMobile] = useState("");
   const [email, setEmail] = useState("");
+  const [mobile, setMobile] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [pending, setPending] = useState(false);
 
   async function onSubmit(event: FormEvent) {
     event.preventDefault();
+    if (name.trim().length < 3) {
+      setError("Enter your full name.");
+      return;
+    }
+    if (!isValidEmail(email)) {
+      setError("Enter a valid email address.");
+      return;
+    }
+    if (!/^\d{10}$/.test(mobile)) {
+      setError("Enter a 10-digit mobile number.");
+      return;
+    }
+    const passwordError = passwordIssue(password);
+    if (passwordError) {
+      setError(passwordError);
+      return;
+    }
+    if (password !== confirmPassword) {
+      setError("The passwords do not match.");
+      return;
+    }
     setPending(true);
     setError("");
     try {
-      const session = await registerCitizen({ name, mobile, email });
-      setCitizenSession(session);
-      setSuccess("Registration complete. Opening your citizen dashboard.");
-      router.push(routes.citizenDashboard);
-      router.refresh();
+      const result = await registerCitizen({ name, email, mobile, password, confirmPassword });
+      setSuccess(result.message || "Check your email and confirm your address to finish registration.");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Registration failed.");
       setSuccess("");
@@ -42,15 +60,19 @@ export function CitizenRegisterForm() {
       {error ? <Alert tone="danger">{error}</Alert> : null}
       {success ? <Alert tone="success">{success}</Alert> : null}
       <Field id="reg-name" label="Full name" required>
+        <Input id="reg-name" value={name} onChange={(event) => setName(event.target.value)} autoComplete="name" required />
+      </Field>
+      <Field id="reg-email" label="Email" required>
         <Input
-          id="reg-name"
-          value={name}
-          onChange={(event) => setName(event.target.value)}
-          autoComplete="name"
+          id="reg-email"
+          type="email"
+          value={email}
+          onChange={(event) => setEmail(event.target.value)}
+          autoComplete="email"
           required
         />
       </Field>
-      <Field id="reg-mobile" label="Mobile number" required>
+      <Field id="reg-mobile" label="Mobile number" required hint="Used to track appointments. This is not used for login.">
         <Input
           id="reg-mobile"
           inputMode="numeric"
@@ -60,17 +82,28 @@ export function CitizenRegisterForm() {
           required
         />
       </Field>
-      <Field id="reg-email" label="Email" hint="Optional. Used for appointment letters.">
-        <Input
-          id="reg-email"
-          type="email"
-          value={email}
-          onChange={(event) => setEmail(event.target.value)}
-          autoComplete="email"
+      <Field id="reg-password" label="Password" required hint="At least 8 characters, with letters and numbers.">
+        <PasswordInput
+          id="reg-password"
+          name="password"
+          value={password}
+          onChange={setPassword}
+          autoComplete="new-password"
+          required
+        />
+      </Field>
+      <Field id="reg-confirm" label="Confirm password" required>
+        <PasswordInput
+          id="reg-confirm"
+          name="confirmPassword"
+          value={confirmPassword}
+          onChange={setConfirmPassword}
+          autoComplete="new-password"
+          required
         />
       </Field>
       <Button type="submit" className="w-full" disabled={pending}>
-        {pending ? "Please wait…" : "Register"}
+        {pending ? "Please wait…" : "Create account"}
       </Button>
       <p className="text-sm text-muted">
         Already registered?{" "}

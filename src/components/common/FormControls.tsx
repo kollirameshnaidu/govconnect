@@ -1,4 +1,7 @@
+"use client";
+
 import type { InputHTMLAttributes, ReactNode, SelectHTMLAttributes, TextareaHTMLAttributes } from "react";
+import { useState } from "react";
 import { cn } from "@/lib/cn";
 
 type FieldProps = {
@@ -49,6 +52,49 @@ export function Input({
   ...props
 }: InputHTMLAttributes<HTMLInputElement>) {
   return <input className={cn(controlClass, className)} {...props} />;
+}
+
+export function PasswordInput({
+  id,
+  name,
+  value,
+  onChange,
+  autoComplete = "current-password",
+  placeholder = "Password",
+  required,
+}: {
+  id: string;
+  name?: string;
+  value: string;
+  onChange: (value: string) => void;
+  autoComplete?: string;
+  placeholder?: string;
+  required?: boolean;
+}) {
+  const [visible, setVisible] = useState(false);
+  return (
+    <div className="relative">
+      <Input
+        id={id}
+        name={name}
+        type={visible ? "text" : "password"}
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        autoComplete={autoComplete}
+        placeholder={placeholder}
+        required={required}
+        className="pr-16"
+      />
+      <button
+        type="button"
+        className="absolute inset-y-0 right-2 text-xs font-semibold text-navy-700"
+        onClick={() => setVisible((current) => !current)}
+        aria-pressed={visible}
+      >
+        {visible ? "Hide" : "Show"}
+      </button>
+    </div>
+  );
 }
 
 export function Select({

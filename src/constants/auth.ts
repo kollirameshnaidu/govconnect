@@ -1,8 +1,9 @@
 export const SESSION_COOKIE = "gc_session";
 export const AUTH_EVENT = "gc-auth";
-export const MOCK_OTP = "123456";
 export const SESSION_MAX_AGE_SECONDS = 60 * 60 * 8;
 export const DEMO_CITIZEN_MOBILE = "9876543210";
+export const DEMO_CITIZEN_EMAIL = "priya.sharma@example.in";
 export const DEMO_OFFICIAL_STAFF_ID = "REV-1101";
 export const DEMO_FRONT_DESK_STAFF_ID = "FD-1101";
 export const DEMO_ADMIN_STAFF_ID = "ADM-1101";
+export const DEMO_PASSWORD = "GovConnect@2026";

@@ -26,7 +26,7 @@ export async function GET() {
       if (isFrontDeskSession(session)) return listFrontDeskAppointments(session);
       if (isAdminSession(session)) return listAdminAppointments(session);
       return [];
-    });
+    }, { write: false });
     return jsonOk({ appointments });
   } catch (error) {
     return jsonError(error instanceof Error ? error.message : "Sign in to continue.", 401);

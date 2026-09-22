@@ -8,6 +8,7 @@ import { Card } from "@/components/common/Card";
 import { Field, Input } from "@/components/common/FormControls";
 import { setCitizenSession } from "@/lib/auth-store";
 import { isCitizenSession, maskMobile } from "@/lib/session";
+import { updateCitizenProfile } from "@/services/authService";
 
 export function CitizenProfileForm() {
   const session = useSession();
@@ -20,25 +21,27 @@ export function CitizenProfileForm() {
   if (!citizen) return null;
   const current = citizen;
 
-  function onSubmit(event: FormEvent) {
+  async function onSubmit(event: FormEvent) {
     event.preventDefault();
     if (name.trim().length < 3) {
       setError("Enter your full name.");
       setSuccess("");
       return;
     }
-    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      setError("Enter a valid email address or leave it blank.");
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      setError("Enter a valid email address.");
       setSuccess("");
       return;
     }
-    setCitizenSession({
-      ...current,
-      name: name.trim(),
-      email: email.trim() || undefined,
-    });
-    setError("");
-    setSuccess("Profile updated for this demo session.");
+    try {
+      const next = await updateCitizenProfile({ name: name.trim(), email: email.trim() });
+      setCitizenSession(next);
+      setError("");
+      setSuccess("Profile saved.");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not save the profile.");
+      setSuccess("");
+    }
   }
 
   return (
@@ -46,7 +49,7 @@ export function CitizenProfileForm() {
       <header>
         <h1 className="text-2xl font-bold text-navy-900">Profile</h1>
         <p className="mt-2 text-sm leading-6 text-muted">
-          Mobile number is the login identity. Email is used later for appointment letters.
+          Email is the login identity. Mobile number is used to track appointments.
         </p>
       </header>
       <Card padding="lg">
@@ -56,10 +59,10 @@ export function CitizenProfileForm() {
           <Field id="profile-name" label="Full name" required>
             <Input id="profile-name" value={name} onChange={(event) => setName(event.target.value)} />
           </Field>
-          <Field id="profile-mobile" label="Mobile number" hint="Used for OTP login. Cannot be changed in this demo.">
+          <Field id="profile-mobile" label="Mobile number" hint="Used to track appointments. Cannot be changed here.">
             <Input id="profile-mobile" value={maskMobile(current.mobile)} disabled />
           </Field>
-          <Field id="profile-email" label="Email" hint="Optional">
+          <Field id="profile-email" label="Email" required hint="Used to sign in.">
             <Input
               id="profile-email"
               type="email"

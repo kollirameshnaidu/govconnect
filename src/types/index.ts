@@ -93,6 +93,26 @@ export type CitizenSession = {
   email?: string;
 };
 
+export type AuthAccount = {
+  id: string;
+  role: UserRole;
+  email: string;
+  passwordHash: string;
+  name: string;
+  mobile?: string;
+  staffId?: string;
+  designation?: string;
+  officeId?: string;
+  departmentId?: string;
+  kind?: AdminKind;
+  district?: string;
+  resetTokenHash?: string;
+  resetExpiresAt?: number;
+  emailVerified?: boolean;
+  emailVerifyTokenHash?: string;
+  emailVerifyExpiresAt?: number;
+};
+
 export type OfficialSession = {
   role: "official";
   id: string;

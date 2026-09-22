@@ -1,7 +1,6 @@
 import {
   AUTH_EVENT,
   SESSION_COOKIE,
-  SESSION_MAX_AGE_SECONDS,
 } from "@/constants/auth";
 import { routes } from "@/constants/routes";
 import type { AppSession, CitizenSession, FrontDeskSession, OfficialSession, AdminSession } from "@/types";
@@ -102,17 +101,17 @@ export function readBrowserSession(): AppSession | null {
 }
 
 export function writeBrowserSession(session: AppSession) {
-  const encoded = serializeSession(session);
-  cachedCookie = encoded;
+  cachedCookie = "__memory__";
   cachedSession = session;
-  document.cookie = `${SESSION_COOKIE}=${encoded}; Path=/; Max-Age=${SESSION_MAX_AGE_SECONDS}; SameSite=Lax`;
   window.dispatchEvent(new Event(AUTH_EVENT));
 }
 
 export function clearBrowserSession() {
   cachedCookie = "";
   cachedSession = null;
-  document.cookie = `${SESSION_COOKIE}=; Path=/; Max-Age=0; SameSite=Lax`;
+  if (typeof document !== "undefined") {
+    document.cookie = `${SESSION_COOKIE}=; Path=/; Max-Age=0; SameSite=Lax`;
+  }
   window.dispatchEvent(new Event(AUTH_EVENT));
 }
 

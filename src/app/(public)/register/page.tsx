@@ -12,7 +12,7 @@ export default function RegisterPage() {
   return (
     <PublicPageShell
       title="Register as a citizen"
-      description="Create a citizen profile to submit appointment requests. You can still browse offices, departments, and announcements without an account."
+      description="Create a citizen account with email and password. We will send a confirmation link to your email address."
       breadcrumbs={[{ href: routes.register, label: "Register" }]}
     >
       <Card className="mx-auto max-w-md" padding="lg">

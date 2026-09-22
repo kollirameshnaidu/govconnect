@@ -19,7 +19,7 @@ export default async function AdminLoginPage({ searchParams }: PageProps<"/admin
       breadcrumbs={[{ href: routes.adminLogin, label: "Admin sign-in" }]}
     >
       <Card className="mx-auto max-w-md" padding="lg">
-        <AdminLoginForm heading="Log in with staff ID" nextPath={nextPath} />
+        <AdminLoginForm heading="Log in with email and password" nextPath={nextPath} />
       </Card>
     </PublicPageShell>
   );

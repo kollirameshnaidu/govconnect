@@ -2,7 +2,7 @@ import type { AdminConfig } from "@/lib/admin-config";
 import { TRACKED_APPOINTMENTS } from "@/mock/homepage";
 import type {
   AuditLog,
-  CitizenSession,
+  AuthAccount,
   Department,
   EscalationRecord,
   GovernmentOffice,
@@ -15,7 +15,7 @@ import type {
 export type RuntimeStore = {
   appointments: TrackedAppointment[];
   admin: AdminConfig;
-  citizens: CitizenSession[];
+  accounts: AuthAccount[];
   grievances: Grievance[];
 };
 
@@ -39,7 +39,7 @@ export function createRuntimeStore(): RuntimeStore {
   return {
     appointments: TRACKED_APPOINTMENTS.map((item) => ({ ...item })),
     admin: emptyAdmin(),
-    citizens: [],
+    accounts: [],
     grievances: [],
   };
 }

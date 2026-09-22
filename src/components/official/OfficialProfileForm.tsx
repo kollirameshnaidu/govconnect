@@ -43,8 +43,8 @@ export function OfficialProfileForm() {
       <header>
         <h1 className="text-2xl font-bold text-navy-900">Profile</h1>
         <p className="mt-2 text-sm leading-6 text-muted">
-          Staff ID is the login identity. Office and department come from the staff record and
-          cannot be changed here.
+          Sign-in uses the office email derived from staff ID. Office and department come from
+          the staff record and cannot be changed here.
         </p>
       </header>
       <Card padding="lg">
@@ -54,7 +54,7 @@ export function OfficialProfileForm() {
           <Field id="official-name" label="Display name" required>
             <Input id="official-name" value={name} onChange={(event) => setName(event.target.value)} />
           </Field>
-          <Field id="official-staff" label="Staff ID" hint="Used for OTP login. Cannot be changed in this demo.">
+          <Field id="official-staff" label="Staff ID" hint="Used to create the sign-in email. Cannot be changed here.">
             <Input id="official-staff" value={desk.staffId} disabled />
           </Field>
           <Field id="official-designation" label="Designation">

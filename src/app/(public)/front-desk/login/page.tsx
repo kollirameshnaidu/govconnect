@@ -21,7 +21,7 @@ export default async function FrontDeskLoginPage({
       breadcrumbs={[{ href: routes.frontDeskLogin, label: "Front desk sign-in" }]}
     >
       <Card className="mx-auto max-w-md" padding="lg">
-        <FrontDeskLoginForm heading="Log in with staff ID" nextPath={nextPath} />
+        <FrontDeskLoginForm heading="Log in with email and password" nextPath={nextPath} />
       </Card>
     </PublicPageShell>
   );

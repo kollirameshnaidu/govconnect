@@ -41,8 +41,8 @@ export function FrontDeskProfileForm() {
       <header>
         <h1 className="text-2xl font-bold text-navy-900">Profile</h1>
         <p className="mt-2 text-sm leading-6 text-muted">
-          Staff ID is the login identity. This desk is tied to one office and cannot assign a
-          confirmed appointment slot.
+          Sign-in uses the office email derived from staff ID. This desk is tied to one office and
+          cannot assign a confirmed appointment slot.
         </p>
       </header>
       <Card padding="lg">
@@ -52,7 +52,7 @@ export function FrontDeskProfileForm() {
           <Field id="fd-name" label="Display name" required>
             <Input id="fd-name" value={name} onChange={(event) => setName(event.target.value)} />
           </Field>
-          <Field id="fd-staff" label="Staff ID" hint="Used for OTP login. Cannot be changed in this demo.">
+          <Field id="fd-staff" label="Staff ID" hint="Used to create the sign-in email. Cannot be changed here.">
             <Input id="fd-staff" value={desk.staffId} disabled />
           </Field>
           <Field id="fd-designation" label="Designation">

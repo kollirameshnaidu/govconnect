@@ -49,7 +49,7 @@ function deny(permission: AdminPermission) {
 export async function GET() {
   try {
     const session = await requireAdmin();
-    const config = await withStore(() => readAdminConfig());
+    const config = await withStore(() => readAdminConfig(), { write: false });
     return jsonOk({ config, kind: session.kind });
   } catch (error) {
     return jsonError(error instanceof Error ? error.message : "Sign in to continue.", 401);

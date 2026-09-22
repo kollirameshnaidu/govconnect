@@ -4,6 +4,7 @@ import {
   isFrontDeskSession,
   isOfficialSession,
 } from "@/lib/session";
+import { mutateAppointment } from "@/server/appointment-actions";
 import { jsonError, jsonOk, requireSession } from "@/server/http";
 import { withStore } from "@/server/persist";
 import { listAdminAppointments } from "@/services/adminService";
@@ -32,10 +33,31 @@ export async function GET(
         );
       }
       return undefined;
-    });
+    }, { write: false });
     if (!appointment) return jsonError("Appointment not found for this signed-in profile.", 404);
     return jsonOk({ appointment });
   } catch (error) {
     return jsonError(error instanceof Error ? error.message : "Sign in to continue.", 401);
   }
+}
+
+export async function PUT(
+  request: Request,
+  context: { params: Promise<{ id: string }> },
+) {
+  return mutateAppointment(request, context);
+}
+
+export async function PATCH(
+  request: Request,
+  context: { params: Promise<{ id: string }> },
+) {
+  return mutateAppointment(request, context);
+}
+
+export async function DELETE() {
+  return jsonError(
+    "Appointment IDs are never hard-deleted. Use reject, no-show, or close so the record stays in MongoDB with the same ID.",
+    405,
+  );
 }

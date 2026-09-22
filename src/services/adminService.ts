@@ -365,6 +365,19 @@ export async function addAdminOfficial(
   withAdminAudit(session, "Added official", `${official.name} (${official.staffId}).`, {
     officials: [official, ...current.officials],
   });
+  const { hashPassword } = await import("@/server/password");
+  const { provisionStaffAccount } = await import("@/server/accounts");
+  const { DEMO_PASSWORD } = await import("@/constants/auth");
+  provisionStaffAccount({
+    id: official.id,
+    role: "official",
+    name: official.name,
+    staffId: official.staffId,
+    designation: official.designation,
+    officeId: official.officeId,
+    departmentId: official.departmentId,
+    passwordHash: await hashPassword(process.env.DEMO_AUTH_PASSWORD || DEMO_PASSWORD),
+  });
 }
 
 export async function addAdminCategoryForDepartment(

@@ -122,5 +122,8 @@ export const config = {
     "/admin/:path*",
     "/login",
     "/register",
+    "/forgot-password",
+    "/reset-password",
+    "/confirm-email",
   ],
 };

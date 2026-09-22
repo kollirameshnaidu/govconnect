@@ -1,10 +1,20 @@
 import { formatDateTimeLabel } from "@/lib/dates";
 import { getRuntimeStore } from "@/lib/runtime-store";
-import { jsonError, jsonOk, readJson } from "@/server/http";
+import { jsonError, jsonOk, readJson, requireAdmin } from "@/server/http";
 import { withStore } from "@/server/persist";
 import type { Grievance } from "@/types";
 
 export const dynamic = "force-dynamic";
+
+export async function GET() {
+  try {
+    await requireAdmin();
+    const grievances = await withStore(() => getRuntimeStore().grievances, { write: false });
+    return jsonOk({ grievances });
+  } catch (error) {
+    return jsonError(error instanceof Error ? error.message : "Sign in to continue.", 401);
+  }
+}
 
 type GrievanceBody = {
   name?: string;

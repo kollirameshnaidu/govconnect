@@ -257,7 +257,7 @@ export function AdminOfficials() {
     setSuccess("");
     try {
       await addAdminOfficial(admin!, { name, designation, staffId, officeId, departmentId });
-      setSuccess("Official added. They can sign in with this staff ID after OTP.");
+      setSuccess(`Official added. They can sign in with ${staffId.trim().toLowerCase()}@govconnect.gov.in.`);
       setName("");
       setStaffId("");
     } catch (err) {

@@ -6,6 +6,7 @@ import {
   isFrontDeskSession,
   isOfficialSession,
   parseSession,
+  serializeSession,
 } from "@/lib/session";
 import type { AdminSession, AppSession, CitizenSession, FrontDeskSession, OfficialSession } from "@/types";
 
@@ -15,6 +16,16 @@ export function jsonOk(data: unknown, status = 200) {
 
 export function jsonError(message: string, status = 400) {
   return Response.json({ error: message }, { status });
+}
+
+export function isInfrastructureError(error: unknown) {
+  const message = (error instanceof Error ? error.message : String(error)).toLowerCase();
+  return (
+    message.includes("mongodb") ||
+    message.includes("not configured") ||
+    message.includes("could not send") ||
+    message.includes("email is not configured")
+  );
 }
 
 export function errorResponse(error: unknown, fallback = "Request failed.") {
@@ -30,11 +41,12 @@ export async function getRequestSession(): Promise<AppSession | null> {
 
 export async function setSessionCookie(session: AppSession) {
   const jar = await cookies();
-  jar.set(SESSION_COOKIE, JSON.stringify(session), {
+  jar.set(SESSION_COOKIE, serializeSession(session), {
     path: "/",
     maxAge: SESSION_MAX_AGE_SECONDS,
     sameSite: "lax",
-    httpOnly: false,
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
   });
 }
 
@@ -44,7 +56,8 @@ export async function clearSessionCookie() {
     path: "/",
     maxAge: 0,
     sameSite: "lax",
-    httpOnly: false,
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
   });
 }
 
