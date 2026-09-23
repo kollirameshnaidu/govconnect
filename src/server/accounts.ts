@@ -5,7 +5,7 @@ import { OFFICIALS } from "@/mock/officials";
 import { normalizeEmail, staffLoginEmail } from "@/lib/auth-rules";
 import { getRuntimeStore } from "@/lib/runtime-store";
 import { hashPassword } from "@/server/password";
-import { demoAuthPassword } from "@/server/demo-password";
+import { optionalDemoAuthPassword } from "@/server/demo-password";
 import type { AdminKind, AppSession, AuthAccount, UserRole } from "@/types";
 
 export function publicAccount(account: AuthAccount): AuthAccount {
@@ -106,13 +106,10 @@ export function saveAccount(account: AuthAccount) {
   store.accounts = [account, ...store.accounts.filter((item) => item.id !== account.id)];
 }
 
-function seedPassword() {
-  return demoAuthPassword();
-}
-
 export async function seedAuthAccounts(existing: AuthAccount[]) {
   const next = [...existing];
-  const demoHash = await hashPassword(seedPassword());
+  const seedPassword = optionalDemoAuthPassword();
+  const demoHash = seedPassword ? await hashPassword(seedPassword) : "";
 
   function upsert(account: Omit<AuthAccount, "passwordHash"> & { passwordHash?: string }) {
     const email = normalizeEmail(account.email);
@@ -125,11 +122,13 @@ export async function seedAuthAccounts(existing: AuthAccount[]) {
       }
       return;
     }
+    const passwordHash = found?.passwordHash || account.passwordHash || demoHash;
+    if (!passwordHash) return;
     const record: AuthAccount = {
       ...account,
       email,
       emailVerified: account.emailVerified ?? true,
-      passwordHash: found?.passwordHash || account.passwordHash || demoHash,
+      passwordHash,
     };
     if (found) {
       Object.assign(found, record);

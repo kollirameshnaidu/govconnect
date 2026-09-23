@@ -37,7 +37,14 @@ export async function POST(request: Request) {
     if (message.toLowerCase().includes("too many")) return jsonError(message, 429);
     if (isInfrastructureError(error)) {
       console.error("[auth] register failed", message);
-      return jsonError("Could not send the confirmation email. Try again later.", 503);
+      const mailFailed =
+        message.toLowerCase().includes("email") || message.toLowerCase().includes("could not send");
+      return jsonError(
+        mailFailed
+          ? "Could not send the confirmation email. Try again later."
+          : "Could not create this account right now. Try again later.",
+        503,
+      );
     }
     return jsonError(message, 400);
   }
