@@ -7,6 +7,7 @@ import {
 import { mutateAppointment } from "@/server/appointment-actions";
 import { jsonError, jsonOk, requireSession } from "@/server/http";
 import { withStore } from "@/server/persist";
+import { assertLiveSession } from "@/server/accounts";
 import { listAdminAppointments } from "@/services/adminService";
 import {
   findCitizenAppointment,
@@ -24,11 +25,12 @@ export async function GET(
     const session = await requireSession();
     const { id } = await context.params;
     const appointment = await withStore(async () => {
-      if (isCitizenSession(session)) return findCitizenAppointment(session.id, id);
-      if (isOfficialSession(session)) return findOfficialAppointment(session, id);
-      if (isFrontDeskSession(session)) return findFrontDeskAppointment(session, id);
-      if (isAdminSession(session)) {
-        return listAdminAppointments(session).find(
+      const live = assertLiveSession(session);
+      if (isCitizenSession(live)) return findCitizenAppointment(live.id, id);
+      if (isOfficialSession(live)) return findOfficialAppointment(live, id);
+      if (isFrontDeskSession(live)) return findFrontDeskAppointment(live, id);
+      if (isAdminSession(live)) {
+        return listAdminAppointments(live).find(
           (item) => item.id === id.trim().toUpperCase(),
         );
       }

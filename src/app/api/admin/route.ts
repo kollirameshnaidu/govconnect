@@ -1,6 +1,8 @@
 import { canAdmin } from "@/constants/admin";
 import { jsonError, jsonOk, readJson, requireAdmin } from "@/server/http";
 import { withStore } from "@/server/persist";
+import { assertLiveSession } from "@/server/accounts";
+import { isAdminSession } from "@/lib/session";
 import {
   acknowledgeEscalation,
   addAdminCategoryForDepartment,
@@ -11,9 +13,9 @@ import {
   removeAdminHoliday,
   saveAdminSettings,
   saveAdminSla,
+  scopedAdminConfig,
   toggleAdminSlot,
 } from "@/services/adminService";
-import { readAdminConfig } from "@/lib/admin-config";
 import type { AdminPermission } from "@/types";
 
 export const dynamic = "force-dynamic";
@@ -49,8 +51,12 @@ function deny(permission: AdminPermission) {
 export async function GET() {
   try {
     const session = await requireAdmin();
-    const config = await withStore(() => readAdminConfig(), { write: false });
-    return jsonOk({ config, kind: session.kind });
+    const payload = await withStore(() => {
+      const live = assertLiveSession(session);
+      if (!isAdminSession(live)) throw new Error("This action is limited to administrators.");
+      return { config: scopedAdminConfig(live), kind: live.kind };
+    }, { write: false });
+    return jsonOk(payload);
   } catch (error) {
     return jsonError(error instanceof Error ? error.message : "Sign in to continue.", 401);
   }
@@ -62,24 +68,26 @@ export async function POST(request: Request) {
     const body = await readJson<AdminBody>(request);
     const action = body.action ?? "";
     const config = await withStore(async () => {
+      const live = assertLiveSession(session);
+      if (!isAdminSession(live)) throw new Error("This action is limited to administrators.");
       if (action === "addHoliday") {
-        if (!canAdmin(session, "holidays")) deny("holidays");
-        await addAdminHoliday(session, { date: body.date ?? "", label: body.label ?? "" });
+        if (!canAdmin(live, "holidays")) deny("holidays");
+        await addAdminHoliday(live, { date: body.date ?? "", label: body.label ?? "" });
       } else if (action === "removeHoliday") {
-        if (!canAdmin(session, "holidays")) deny("holidays");
-        await removeAdminHoliday(session, body.date ?? "");
+        if (!canAdmin(live, "holidays")) deny("holidays");
+        await removeAdminHoliday(live, body.date ?? "");
       } else if (action === "toggleSlot") {
-        if (!canAdmin(session, "slots")) deny("slots");
-        await toggleAdminSlot(session, body.officeId ?? "", body.time ?? "");
+        if (!canAdmin(live, "slots")) deny("slots");
+        await toggleAdminSlot(live, body.officeId ?? "", body.time ?? "");
       } else if (action === "saveSla") {
-        if (!canAdmin(session, "sla")) deny("sla");
-        await saveAdminSla(session, {
+        if (!canAdmin(live, "sla")) deny("sla");
+        await saveAdminSla(live, {
           reviewHours: Number(body.reviewHours),
           departmentHours: body.departmentHours,
         });
       } else if (action === "addOffice") {
-        if (!canAdmin(session, "offices")) deny("offices");
-        await addAdminOffice(session, {
+        if (!canAdmin(live, "offices")) deny("offices");
+        await addAdminOffice(live, {
           name: body.name ?? "",
           district: body.district ?? "",
           address: body.address ?? "",
@@ -88,8 +96,8 @@ export async function POST(request: Request) {
           email: body.email ?? "",
         });
       } else if (action === "addOfficial") {
-        if (!canAdmin(session, "officials")) deny("officials");
-        await addAdminOfficial(session, {
+        if (!canAdmin(live, "officials")) deny("officials");
+        await addAdminOfficial(live, {
           name: body.name ?? "",
           designation: body.designation ?? "",
           staffId: body.staffId ?? "",
@@ -97,25 +105,25 @@ export async function POST(request: Request) {
           departmentId: body.departmentId ?? "",
         });
       } else if (action === "addCategory") {
-        if (!canAdmin(session, "categories")) deny("categories");
-        await addAdminCategoryForDepartment(session, body.departmentId ?? "", body.category ?? "");
+        if (!canAdmin(live, "categories")) deny("categories");
+        await addAdminCategoryForDepartment(live, body.departmentId ?? "", body.category ?? "");
       } else if (action === "acknowledgeEscalation") {
-        if (!canAdmin(session, "escalation")) deny("escalation");
-        await acknowledgeEscalation(session, body.id ?? "");
+        if (!canAdmin(live, "escalation")) deny("escalation");
+        await acknowledgeEscalation(live, body.id ?? "");
       } else if (action === "raiseEscalation") {
-        if (!canAdmin(session, "escalation")) deny("escalation");
-        await raiseEscalation(session, body.appointmentId ?? "", body.note ?? "");
+        if (!canAdmin(live, "escalation")) deny("escalation");
+        await raiseEscalation(live, body.appointmentId ?? "", body.note ?? "");
       } else if (action === "saveSettings") {
-        if (!canAdmin(session, "settings")) deny("settings");
-        await saveAdminSettings(session, {
-          name: body.name ?? session.name,
+        if (!canAdmin(live, "settings")) deny("settings");
+        await saveAdminSettings(live, {
+          name: body.name ?? live.name,
           helpdeskEmail: body.helpdeskEmail ?? "",
           reviewHours: Number(body.reviewHours),
         });
       } else {
         throw new Error("This administrator action is not supported.");
       }
-      return readAdminConfig();
+      return scopedAdminConfig(live);
     });
     return jsonOk({ config });
   } catch (error) {

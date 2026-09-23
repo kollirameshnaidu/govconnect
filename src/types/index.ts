@@ -91,6 +91,7 @@ export type CitizenSession = {
   name: string;
   mobile: string;
   email?: string;
+  v?: number;
 };
 
 export type AuthAccount = {
@@ -111,6 +112,7 @@ export type AuthAccount = {
   emailVerified?: boolean;
   emailVerifyTokenHash?: string;
   emailVerifyExpiresAt?: number;
+  sessionVersion?: number;
 };
 
 export type OfficialSession = {
@@ -121,6 +123,7 @@ export type OfficialSession = {
   officeId: string;
   departmentId: string;
   staffId: string;
+  v?: number;
 };
 
 export type FrontDeskSession = {
@@ -130,6 +133,7 @@ export type FrontDeskSession = {
   designation: string;
   officeId: string;
   staffId: string;
+  v?: number;
 };
 
 export type AdminSession = {
@@ -141,6 +145,7 @@ export type AdminSession = {
   kind: AdminKind;
   departmentId?: string;
   district?: string;
+  v?: number;
 };
 
 export type AppSession = CitizenSession | OfficialSession | FrontDeskSession | AdminSession;

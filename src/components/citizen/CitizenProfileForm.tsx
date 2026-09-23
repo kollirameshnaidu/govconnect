@@ -34,10 +34,10 @@ export function CitizenProfileForm() {
       return;
     }
     try {
-      const next = await updateCitizenProfile({ name: name.trim(), email: email.trim() });
-      setCitizenSession(next);
+      const data = await updateCitizenProfile({ name: name.trim(), email: email.trim() });
+      setCitizenSession(data.session);
       setError("");
-      setSuccess("Profile saved.");
+      setSuccess(data.message || "Profile saved.");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not save the profile.");
       setSuccess("");

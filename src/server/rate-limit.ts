@@ -7,7 +7,8 @@ const buckets = new Map<string, Bucket>();
 
 export function clientKey(request: Request) {
   const forwarded = request.headers.get("x-forwarded-for");
-  const ip = forwarded?.split(",")[0]?.trim() || request.headers.get("x-real-ip") || "local";
+  const parts = forwarded?.split(",") ?? [];
+  const ip = parts[parts.length - 1]?.trim() || request.headers.get("x-real-ip") || "local";
   return ip;
 }
 

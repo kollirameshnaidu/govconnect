@@ -5,11 +5,12 @@ import { useSession } from "@/components/auth/AuthProvider";
 import { Card } from "@/components/common/Card";
 import { EmptyState } from "@/components/common/EmptyState";
 import { routes } from "@/constants/routes";
-import { getNotificationsForCitizen } from "@/services/notificationService";
+import { useNotifications } from "@/lib/use-notifications";
+import type { CitizenNotification } from "@/types";
 
 export function CitizenNotificationList() {
   const session = useSession();
-  const items = session ? getNotificationsForCitizen(session.id) : [];
+  const { items, loading } = useNotifications<CitizenNotification>();
 
   if (!session) return null;
 
@@ -22,7 +23,9 @@ export function CitizenNotificationList() {
           staff cannot assign a confirmed appointment time.
         </p>
       </header>
-      {items.length === 0 ? (
+      {loading ? (
+        <p className="text-sm text-muted">Loading notifications…</p>
+      ) : items.length === 0 ? (
         <EmptyState
           icon="bell"
           title="No alerts yet"

@@ -49,9 +49,15 @@ export function TrackAppointment({
     }
     setError("");
     setPending(true);
-    const next = await trackAppointment(appointmentId, mobile);
-    setResult(next);
-    setPending(false);
+    try {
+      const next = await trackAppointment(appointmentId, mobile);
+      setResult(next);
+    } catch (err) {
+      setResult(undefined);
+      setError(err instanceof Error ? err.message : "Could not look up this appointment. Try again.");
+    } finally {
+      setPending(false);
+    }
   }
 
   return (
@@ -60,7 +66,7 @@ export function TrackAppointment({
         <SectionHeading
           eyebrow="Appointment tracking"
           title="Track a request with your appointment ID"
-          description="Demo IDs GC-2026-000184, GC-2026-000256, GC-2026-000201, and GC-2026-000088 work with any 10-digit mobile number. Newly submitted requests need the mobile used at login."
+          description="Demo IDs GC-2026-000184, GC-2026-000256, GC-2026-000201, and GC-2026-000088 need the mobile number recorded on that request."
         />
       ) : null}
       <div className="grid gap-6 lg:grid-cols-[1fr_1.2fr]">

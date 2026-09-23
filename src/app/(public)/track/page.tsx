@@ -16,7 +16,7 @@ export default async function TrackPage({
   return (
     <PublicPageShell
       title="Track appointment"
-      description="Enter the appointment ID and the registered mobile number. Demo IDs GC-2026-000184, GC-2026-000256, GC-2026-000201, and GC-2026-000088 work with any 10-digit mobile. Login is only required for personal actions such as confirmation or document download."
+      description="Enter the appointment ID and the registered mobile number. Seeded demo IDs need the mobile recorded on that request. Login is only required for personal actions such as confirmation or document download."
       breadcrumbs={[{ href: routes.track, label: "Track" }]}
       actions={<Button href={routes.login}>Login if this is your request</Button>}
     >

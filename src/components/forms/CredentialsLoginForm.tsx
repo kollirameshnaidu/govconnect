@@ -110,10 +110,8 @@ export function CredentialsLoginForm({
           name="email"
           type="email"
           autoComplete="username"
-          placeholder={demoEmail(role)}
           value={email}
           onChange={(event) => setEmail(event.target.value)}
-          required
         />
       </Field>
       <Field id={`${role}-password`} label="Password" required>
@@ -122,7 +120,6 @@ export function CredentialsLoginForm({
           name="password"
           value={password}
           onChange={setPassword}
-          required
         />
       </Field>
       <Button type="submit" className="w-full" disabled={pending}>

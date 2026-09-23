@@ -8,6 +8,7 @@ import { Card } from "@/components/common/Card";
 import { Field, Input } from "@/components/common/FormControls";
 import { setFrontDeskSession } from "@/lib/auth-store";
 import { isFrontDeskSession } from "@/lib/session";
+import { updateStaffProfile } from "@/services/authService";
 import { getOfficeById } from "@/services/officeService";
 
 export function FrontDeskProfileForm() {
@@ -21,19 +22,22 @@ export function FrontDeskProfileForm() {
   const desk = staff;
   const office = getOfficeById(desk.officeId);
 
-  function onSubmit(event: FormEvent) {
+  async function onSubmit(event: FormEvent) {
     event.preventDefault();
     if (name.trim().length < 3) {
       setError("Enter the display name used on the visit history.");
       setSuccess("");
       return;
     }
-    setFrontDeskSession({
-      ...desk,
-      name: name.trim(),
-    });
-    setError("");
-    setSuccess("Profile updated for this demo session.");
+    try {
+      const data = await updateStaffProfile({ name: name.trim() });
+      if (isFrontDeskSession(data.session)) setFrontDeskSession(data.session);
+      setError("");
+      setSuccess(data.message || "Profile saved.");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not save the profile.");
+      setSuccess("");
+    }
   }
 
   return (

@@ -2,7 +2,7 @@
 
 import { useEffect, type ReactNode } from "react";
 import { api } from "@/constants/api";
-import { mergeAdminOverlay, writeAdminConfig, type AdminConfig } from "@/lib/admin-config";
+import { mergeAdminOverlay, type AdminConfig } from "@/lib/admin-config";
 import { apiRequest } from "@/lib/api-client";
 import { hydrateCreatedAppointments } from "@/lib/created-appointments";
 import type { AppSession, TrackedAppointment } from "@/types";
@@ -46,7 +46,7 @@ export function ApiHydrator({
 
       try {
         const data = await apiRequest<{ config: AdminConfig }>(api.admin);
-        if (!cancelled && data.config) writeAdminConfig(data.config);
+        if (!cancelled && data.config) mergeAdminOverlay(data.config);
       } catch {
         /* keep the last local administrator overlay */
       }

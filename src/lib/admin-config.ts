@@ -105,11 +105,31 @@ export function writeAdminConfig(next: AdminConfig) {
   window.dispatchEvent(new Event(ADMIN_CONFIG_EVENT));
 }
 
+function mergeById<T extends { id: string }>(current: T[], extra: T[]) {
+  const map = new Map(current.map((item) => [item.id, item]));
+  for (const item of extra) map.set(item.id, item);
+  return [...map.values()];
+}
+
 export function mergeAdminOverlay(overlay: Partial<AdminConfig>) {
   const current = readAdminConfig();
   writeAdminConfig({
     ...current,
     ...overlay,
+    offices: overlay.offices ? mergeById(current.offices, overlay.offices) : current.offices,
+    departments: overlay.departments
+      ? mergeById(current.departments, overlay.departments)
+      : current.departments,
+    officials: overlay.officials ? mergeById(current.officials, overlay.officials) : current.officials,
+    holidays: overlay.holidays
+      ? [
+          ...overlay.holidays,
+          ...current.holidays.filter(
+            (item) => !overlay.holidays?.some((holiday) => holiday.date === item.date),
+          ),
+        ]
+      : current.holidays,
+    categories: overlay.categories ?? current.categories,
     audit: overlay.audit ?? current.audit,
     escalations: overlay.escalations ?? current.escalations,
   });

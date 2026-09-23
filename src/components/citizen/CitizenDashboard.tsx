@@ -11,17 +11,17 @@ import { AppointmentStatus } from "@/constants/appointment-status";
 import { routes } from "@/constants/routes";
 import { ACTIVE_STATUSES } from "@/mock/citizen-portal";
 import { useCitizenAppointments } from "@/lib/use-citizen-appointments";
-import { getNotificationsForCitizen } from "@/services/notificationService";
+import { useNotifications } from "@/lib/use-notifications";
+import type { CitizenNotification } from "@/types";
 
 export function CitizenDashboard() {
   const session = useSession();
   const { appointments, ready } = useCitizenAppointments(session?.id);
+  const { items: notifications, loading: notificationsLoading } = useNotifications<CitizenNotification>();
   if (!session) return null;
   if (!ready) {
     return <p className="text-sm text-muted">Loading appointments…</p>;
   }
-
-  const notifications = getNotificationsForCitizen(session.id);
   const active = appointments.filter((item) =>
     (ACTIVE_STATUSES as readonly string[]).includes(item.status),
   );
@@ -116,7 +116,9 @@ export function CitizenDashboard() {
             All alerts
           </Link>
         </div>
-        {notifications.length === 0 ? (
+        {notificationsLoading ? (
+          <p className="text-sm text-muted">Loading notifications…</p>
+        ) : notifications.length === 0 ? (
           <EmptyState
             icon="bell"
             title="No notifications"

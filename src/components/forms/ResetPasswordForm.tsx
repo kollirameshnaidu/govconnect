@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Alert } from "@/components/common/Alert";
@@ -17,6 +17,16 @@ export function ResetPasswordForm({ token }: { token: string }) {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [pending, setPending] = useState(false);
+
+  useEffect(() => {
+    if (!token || typeof window === "undefined") return;
+    const url = new URL(window.location.href);
+    if (url.searchParams.has("token")) {
+      url.searchParams.delete("token");
+      const next = `${url.pathname}${url.search}${url.hash}`;
+      window.history.replaceState({}, "", next);
+    }
+  }, [token]);
 
   async function onSubmit(event: FormEvent) {
     event.preventDefault();
@@ -52,7 +62,7 @@ export function ResetPasswordForm({ token }: { token: string }) {
     <form className="grid gap-4" onSubmit={onSubmit} noValidate>
       {error ? <Alert tone="danger">{error}</Alert> : null}
       {success ? <Alert tone="success">{success}</Alert> : null}
-      <Field id="reset-password" label="New password" required hint="At least 8 characters, with letters and numbers.">
+      <Field id="reset-password" label="New password" required hint="At least 8 characters, with letters, numbers, and a symbol.">
         <PasswordInput
           id="reset-password"
           value={password}

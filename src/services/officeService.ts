@@ -1,4 +1,5 @@
-import { DEPARTMENTS, OFFICES, QUICK_SERVICES } from "@/mock/homepage";
+import { OFFICES, QUICK_SERVICES } from "@/mock/homepage";
+import { getDepartmentsByIds } from "@/services/departmentService";
 import { readAdminConfig } from "@/lib/admin-config";
 import type { Department, GovernmentOffice, QuickService } from "@/types";
 
@@ -38,6 +39,6 @@ export function getServicesForDepartment(departmentId: string): QuickService[] {
 }
 
 export function getDepartmentsForOffice(office: GovernmentOffice): Department[] {
-  return DEPARTMENTS.filter((item) => office.departmentIds.includes(item.id));
+  return getDepartmentsByIds(office.departmentIds);
 }
 

@@ -14,6 +14,13 @@ export function ConfirmEmailForm({ token }: { token: string }) {
   const [success, setSuccess] = useState("");
 
   useEffect(() => {
+    if (token && typeof window !== "undefined") {
+      const url = new URL(window.location.href);
+      if (url.searchParams.has("token")) {
+        url.searchParams.delete("token");
+        window.history.replaceState({}, "", `${url.pathname}${url.search}${url.hash}`);
+      }
+    }
     if (!token) {
       setError("This confirmation link is invalid or has expired.");
       return;

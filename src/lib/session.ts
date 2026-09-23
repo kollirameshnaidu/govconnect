@@ -21,42 +21,37 @@ export function isAdminSession(session: AppSession | null | undefined): session 
   return session?.role === "admin";
 }
 
-export function parseSession(value?: string | null): AppSession | null {
-  if (!value) return null;
-  try {
-    const decoded = decodeURIComponent(value);
-    const session = JSON.parse(decoded) as AppSession;
-    if (session?.role === "citizen" && session.id && /^\d{10}$/.test(session.mobile)) {
-      return session;
-    }
-    if (
-      session?.role === "official" &&
-      session.id &&
-      session.staffId &&
-      session.officeId &&
-      session.departmentId
-    ) {
-      return session;
-    }
-    if (session?.role === "frontdesk" && session.id && session.staffId && session.officeId) {
-      return session;
-    }
-    if (
-      session?.role === "admin" &&
-      session.id &&
-      session.staffId &&
-      (session.kind === "super" || session.kind === "district" || session.kind === "department")
-    ) {
-      return session;
-    }
-    return null;
-  } catch {
-    return null;
+export function parseSessionObject(value: unknown): AppSession | null {
+  const session = value as AppSession;
+  if (session?.role === "citizen" && session.id && /^\d{10}$/.test(session.mobile)) {
+    return session;
   }
+  if (
+    session?.role === "official" &&
+    session.id &&
+    session.staffId &&
+    session.officeId &&
+    session.departmentId
+  ) {
+    return session;
+  }
+  if (session?.role === "frontdesk" && session.id && session.staffId && session.officeId) {
+    return session;
+  }
+  if (
+    session?.role === "admin" &&
+    session.id &&
+    session.staffId &&
+    (session.kind === "super" || session.kind === "district" || session.kind === "department")
+  ) {
+    return session;
+  }
+  return null;
 }
 
-export function serializeSession(session: AppSession): string {
-  return encodeURIComponent(JSON.stringify(session));
+export function parseSession(_value?: string | null): AppSession | null {
+  void _value;
+  return null;
 }
 
 export function sessionsEqual(a: AppSession | null, b: AppSession | null) {
@@ -67,47 +62,48 @@ export function sessionsEqual(a: AppSession | null, b: AppSession | null) {
       a.id === b.id &&
       a.name === b.name &&
       a.mobile === b.mobile &&
-      (a.email ?? "") === (b.email ?? "")
+      (a.email ?? "") === (b.email ?? "") &&
+      (a.v ?? 0) === (b.v ?? 0)
     );
   }
   if (a.role === "official" && b.role === "official") {
-    return a.id === b.id && a.staffId === b.staffId && a.name === b.name;
+    return a.id === b.id && a.staffId === b.staffId && a.name === b.name && (a.v ?? 0) === (b.v ?? 0);
   }
   if (a.role === "frontdesk" && b.role === "frontdesk") {
-    return a.id === b.id && a.staffId === b.staffId && a.name === b.name;
+    return a.id === b.id && a.staffId === b.staffId && a.name === b.name && (a.v ?? 0) === (b.v ?? 0);
   }
   if (a.role === "admin" && b.role === "admin") {
-    return a.id === b.id && a.staffId === b.staffId && a.name === b.name && a.kind === b.kind;
+    return (
+      a.id === b.id &&
+      a.staffId === b.staffId &&
+      a.name === b.name &&
+      a.kind === b.kind &&
+      (a.v ?? 0) === (b.v ?? 0)
+    );
   }
   return false;
 }
 
-let cachedCookie = "__unset__";
 let cachedSession: AppSession | null = null;
+let signedOut = false;
 
-function readCookieValue(): string | null {
-  if (typeof document === "undefined") return null;
-  const match = document.cookie.match(new RegExp(`(?:^|; )${SESSION_COOKIE}=([^;]*)`));
-  return match?.[1] ?? null;
+export function isBrowserSignedOut() {
+  return signedOut;
 }
 
 export function readBrowserSession(): AppSession | null {
-  const raw = readCookieValue();
-  const key = raw ?? "";
-  if (key === cachedCookie) return cachedSession;
-  cachedCookie = key;
-  cachedSession = parseSession(raw);
+  if (signedOut) return null;
   return cachedSession;
 }
 
 export function writeBrowserSession(session: AppSession) {
-  cachedCookie = "__memory__";
+  signedOut = false;
   cachedSession = session;
   window.dispatchEvent(new Event(AUTH_EVENT));
 }
 
 export function clearBrowserSession() {
-  cachedCookie = "";
+  signedOut = true;
   cachedSession = null;
   if (typeof document !== "undefined") {
     document.cookie = `${SESSION_COOKIE}=; Path=/; Max-Age=0; SameSite=Lax`;

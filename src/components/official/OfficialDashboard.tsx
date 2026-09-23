@@ -12,14 +12,16 @@ import { routes } from "@/constants/routes";
 import { isReviewQueue, isScheduledVisit } from "@/lib/appointment-lifecycle";
 import { isOfficialSession } from "@/lib/session";
 import { useOfficialAppointments } from "@/lib/use-citizen-appointments";
-import { getNotificationsForOfficial } from "@/services/notificationService";
+import { useNotifications } from "@/lib/use-notifications";
 import { getDepartmentById } from "@/services/departmentService";
 import { getOfficeById } from "@/services/officeService";
+import type { OfficialNotification } from "@/types";
 
 export function OfficialDashboard() {
   const session = useSession();
   const official = isOfficialSession(session) ? session : null;
   const { appointments, ready } = useOfficialAppointments(official);
+  const { items: notifications, loading: notificationsLoading } = useNotifications<OfficialNotification>();
 
   if (!official) return null;
   if (!ready) {
@@ -28,7 +30,6 @@ export function OfficialDashboard() {
 
   const office = getOfficeById(official.officeId);
   const department = getDepartmentById(official.departmentId);
-  const notifications = getNotificationsForOfficial(official.id);
   const inbox = appointments.filter((item) => isReviewQueue(item.status));
   const awaitingSlot = appointments.filter((item) => item.status === AppointmentStatus.ACCEPTED);
   const visits = appointments.filter((item) => isScheduledVisit(item.status));
@@ -120,7 +121,9 @@ export function OfficialDashboard() {
             All alerts
           </Link>
         </div>
-        {notifications.length === 0 ? (
+        {notificationsLoading ? (
+          <p className="text-sm text-muted">Loading notifications…</p>
+        ) : notifications.length === 0 ? (
           <EmptyState
             icon="bell"
             title="No notifications"

@@ -1,9 +1,7 @@
 "use client";
 
 import { CredentialsLoginForm } from "@/components/forms/CredentialsLoginForm";
-import { DEMO_FRONT_DESK_STAFF_ID, DEMO_PASSWORD } from "@/constants/auth";
 import { routes } from "@/constants/routes";
-import { staffLoginEmail } from "@/lib/auth-rules";
 import Link from "next/link";
 
 type FrontDeskLoginFormProps = {
@@ -19,7 +17,7 @@ export function FrontDeskLoginForm({
     <CredentialsLoginForm
       role="frontdesk"
       heading={heading}
-      description={`Front desk staff sign in with email and password. This desk verifies visitors and manages the queue. It cannot assign a confirmed appointment slot. Demo: ${staffLoginEmail(DEMO_FRONT_DESK_STAFF_ID)}, password ${DEMO_PASSWORD}.`}
+      description="Front desk staff sign in with email and password. This desk verifies visitors and manages the queue. It cannot assign a confirmed appointment slot."
       submitLabel="Open front desk"
       nextPath={nextPath}
       footer={

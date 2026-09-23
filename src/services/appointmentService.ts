@@ -1,19 +1,21 @@
 import { AppointmentStatus } from "@/constants/appointment-status";
 import { api } from "@/constants/api";
 import { apiRequest, isBrowser } from "@/lib/api-client";
-import { formatDateTimeLabel, formatDisplayDate, formatTimeLabel, toIsoDate, workingDateIssue } from "@/lib/dates";
+import { formatDateTimeLabel, formatDisplayDate, formatTimeLabel, preferredDateIssue, toIsoDate, workingDateIssue } from "@/lib/dates";
 import {
   readCreatedAppointments,
   saveCreatedAppointment,
 } from "@/lib/created-appointments";
 import {
   canAccept,
+  canCancelAppointment,
   canCheckIn,
   canCloseAppointment,
   canCompleteMeeting,
   canConfirmVisit,
   canMarkNoShow,
   canReject,
+  canRequestReschedule,
   canSchedule,
   canSendToWaiting,
   canStartMeeting,
@@ -46,8 +48,6 @@ async function mutateViaApi(appointmentId: string, body: Record<string, unknown>
   saveCreatedAppointment(data.appointment);
   return data.appointment;
 }
-
-const DEMO_TRACK_IDS = new Set(TRACKED_APPOINTMENTS.map((item) => item.id));
 
 export function listCitizenAppointments(
   citizenId: string,
@@ -113,7 +113,6 @@ export async function trackAppointment(
   if (!/^\d{10}$/.test(normalizedMobile)) return null;
   const appointment = appointmentById(normalizedId);
   if (!appointment) return null;
-  if (DEMO_TRACK_IDS.has(normalizedId)) return appointment;
   return matchesRegisteredMobile(appointment, normalizedMobile) ? appointment : null;
 }
 
@@ -139,6 +138,11 @@ export async function submitAppointmentRequest(
     return data.appointment;
   }
   await wait(500);
+  const dateIssue = preferredDateIssue(draft.preferredDate);
+  if (dateIssue) throw new Error(dateIssue);
+  if (draft.purpose.trim().length < 20) {
+    throw new Error("Describe the purpose of visit in at least 20 characters.");
+  }
   const office = getOfficeById(draft.officeId);
   const department = getDepartmentById(draft.departmentId);
   const official = getOfficialById(draft.officialId);
@@ -212,6 +216,78 @@ export async function confirmCitizenVisit(
   };
   saveCreatedAppointment(confirmed);
   return confirmed;
+}
+
+export async function cancelCitizenAppointment(
+  citizen: CitizenSession,
+  appointmentId: string,
+  reason: string,
+): Promise<TrackedAppointment> {
+  if (isBrowser()) return mutateViaApi(appointmentId, { action: "cancel", reason });
+  await wait(400);
+  const current = findCitizenAppointment(citizen.id, appointmentId);
+  if (!current) {
+    throw new Error("This appointment is not linked to the signed-in citizen profile.");
+  }
+  if (!canCancelAppointment(current.status)) {
+    throw new Error("This appointment can no longer be cancelled.");
+  }
+  const note = reason.trim()
+    ? `Citizen cancelled the request. Reason: ${reason.trim()}. Appointment ID ${current.id} is unchanged.`
+    : `Citizen cancelled the request. Appointment ID ${current.id} is unchanged.`;
+  const cancelled: TrackedAppointment = {
+    ...current,
+    status: AppointmentStatus.CANCELLED,
+    notes: note,
+    history: [
+      ...(current.history ?? []),
+      {
+        status: AppointmentStatus.CANCELLED,
+        at: formatDateTimeLabel(new Date()),
+        note,
+        actor: citizen.name,
+      },
+    ],
+  };
+  saveCreatedAppointment(cancelled);
+  return cancelled;
+}
+
+export async function requestCitizenReschedule(
+  citizen: CitizenSession,
+  appointmentId: string,
+  reason: string,
+): Promise<TrackedAppointment> {
+  if (isBrowser()) return mutateViaApi(appointmentId, { action: "reschedule", reason });
+  await wait(400);
+  const detail = reason.trim();
+  if (detail.length < 10) {
+    throw new Error("Explain why a new slot is needed in at least 10 characters.");
+  }
+  const current = findCitizenAppointment(citizen.id, appointmentId);
+  if (!current) {
+    throw new Error("This appointment is not linked to the signed-in citizen profile.");
+  }
+  if (!canRequestReschedule(current.status)) {
+    throw new Error("A reschedule can only be requested after a slot is assigned.");
+  }
+  const note = `Citizen requested a new confirmed slot. Reason: ${detail}. Appointment ID ${current.id} is unchanged. Preferred date is still not a reserved slot.`;
+  const next: TrackedAppointment = {
+    ...current,
+    status: AppointmentStatus.RESCHEDULE_REQUESTED,
+    notes: note,
+    history: [
+      ...(current.history ?? []),
+      {
+        status: AppointmentStatus.RESCHEDULE_REQUESTED,
+        at: formatDateTimeLabel(new Date()),
+        note,
+        actor: citizen.name,
+      },
+    ],
+  };
+  saveCreatedAppointment(next);
+  return next;
 }
 
 export function listAllAppointments(
@@ -392,6 +468,13 @@ export async function transferOfficialRequest(
     throw new Error("Transfer to a different official.");
   }
   const office = getOfficeById(target.officeId);
+  const currentOffice = current.officeId ? getOfficeById(current.officeId) : undefined;
+  if (
+    target.officeId !== current.officeId &&
+    office?.district !== currentOffice?.district
+  ) {
+    throw new Error("Transfer within the same office or district.");
+  }
   const department = getDepartmentById(target.departmentId);
   if (!office || !department) {
     throw new Error("The receiving desk is not configured.");

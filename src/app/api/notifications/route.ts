@@ -6,6 +6,7 @@ import {
 } from "@/lib/session";
 import { jsonError, jsonOk, requireSession } from "@/server/http";
 import { withStore } from "@/server/persist";
+import { assertLiveSession } from "@/server/accounts";
 import {
   getNotificationsForAdmin,
   getNotificationsForCitizen,
@@ -19,10 +20,11 @@ export async function GET() {
   try {
     const session = await requireSession();
     const notifications = await withStore(() => {
-      if (isCitizenSession(session)) return getNotificationsForCitizen(session.id);
-      if (isOfficialSession(session)) return getNotificationsForOfficial(session.id);
-      if (isFrontDeskSession(session)) return getNotificationsForFrontDesk(session.staffId);
-      if (isAdminSession(session)) return getNotificationsForAdmin(session);
+      const live = assertLiveSession(session);
+      if (isCitizenSession(live)) return getNotificationsForCitizen(live.id);
+      if (isOfficialSession(live)) return getNotificationsForOfficial(live);
+      if (isFrontDeskSession(live)) return getNotificationsForFrontDesk(live);
+      if (isAdminSession(live)) return getNotificationsForAdmin(live);
       return [];
     }, { write: false });
     return jsonOk({ notifications });

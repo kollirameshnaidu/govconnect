@@ -2,13 +2,13 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { SESSION_COOKIE } from "@/constants/auth";
 import { routes } from "@/constants/routes";
+import { parseSignedSession } from "@/lib/session-cookie";
 import {
   homeForSession,
   isAdminSession,
   isCitizenSession,
   isFrontDeskSession,
   isOfficialSession,
-  parseSession,
   postAdminLoginPath,
   postFrontDeskLoginPath,
   postLoginPath,
@@ -27,9 +27,30 @@ function redirectTo(request: NextRequest, pathname: string, search?: Record<stri
   return NextResponse.redirect(url);
 }
 
-export function proxy(request: NextRequest) {
-  const session = parseSession(request.cookies.get(SESSION_COOKIE)?.value);
+function isSameOrigin(request: NextRequest) {
+  const origin = request.headers.get("origin");
+  const host = request.headers.get("host");
+  if (!origin || !host) return true;
+  try {
+    return new URL(origin).host === host;
+  } catch {
+    return false;
+  }
+}
+
+export async function proxy(request: NextRequest) {
   const { pathname, searchParams } = request.nextUrl;
+
+  if (pathname.startsWith("/api")) {
+    if (request.method !== "GET" && request.method !== "HEAD" && request.method !== "OPTIONS") {
+      if (!isSameOrigin(request)) {
+        return NextResponse.json({ error: "This request is not allowed." }, { status: 403 });
+      }
+    }
+    return NextResponse.next();
+  }
+
+  const session = await parseSignedSession(request.cookies.get(SESSION_COOKIE)?.value);
 
   if (pathname.startsWith("/citizen")) {
     if (!isCitizenSession(session)) {
@@ -95,6 +116,10 @@ export function proxy(request: NextRequest) {
     return NextResponse.next();
   }
 
+  if (pathname === routes.forgotPassword && session) {
+    return redirectTo(request, homeForSession(session));
+  }
+
   if ((pathname === routes.login || pathname === routes.register) && session) {
     if (isOfficialSession(session)) {
       return redirectTo(request, routes.officialDashboard);
@@ -125,5 +150,6 @@ export const config = {
     "/forgot-password",
     "/reset-password",
     "/confirm-email",
+    "/api/:path*",
   ],
 };

@@ -14,18 +14,21 @@ import {
   acceptOfficialRequest,
   addOfficialMeetingNotes,
   callNextFrontDeskVisitor,
+  cancelCitizenAppointment,
   checkInFrontDeskVisit,
   closeOfficialAppointment,
   completeOfficialMeeting,
   confirmCitizenVisit,
   markFrontDeskNoShow,
   rejectOfficialRequest,
+  requestCitizenReschedule,
   scheduleOfficialAppointment,
   sendFrontDeskVisitToQueue,
   startOfficialMeeting,
   takeUpOfficialRequest,
   transferOfficialRequest,
 } from "@/services/appointmentService";
+import { assertLiveSession } from "@/server/accounts";
 import type { TrackedAppointment } from "@/types";
 
 type ActionBody = {
@@ -55,9 +58,18 @@ export async function mutateAppointment(
     }
 
     const appointment = await withStore(async (): Promise<TrackedAppointment> => {
+      assertLiveSession(session);
       if (action === "confirm") {
         const citizen = await requireCitizen();
         return confirmCitizenVisit(citizen, id);
+      }
+      if (action === "cancel") {
+        const citizen = await requireCitizen();
+        return cancelCitizenAppointment(citizen, id, body.reason ?? "");
+      }
+      if (action === "reschedule") {
+        const citizen = await requireCitizen();
+        return requestCitizenReschedule(citizen, id, body.reason ?? "");
       }
       if (action === "takeUp") {
         const official = await requireOfficial();

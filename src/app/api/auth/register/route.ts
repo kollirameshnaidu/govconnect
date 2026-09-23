@@ -2,6 +2,7 @@ import { isInfrastructureError, jsonError, jsonOk, readJson } from "@/server/htt
 import { withStore } from "@/server/persist";
 import { clientKey, enforceRateLimit } from "@/server/rate-limit";
 import { registerCitizenAccount } from "@/server/auth-actions";
+import { sendRegistrationConfirmEmail } from "@/server/mail";
 
 export const dynamic = "force-dynamic";
 
@@ -17,7 +18,7 @@ export async function POST(request: Request) {
   try {
     const body = await readJson<RegisterBody>(request);
     enforceRateLimit(`register:${clientKey(request)}`);
-    const session = await withStore(() =>
+    const { confirm } = await withStore(() =>
       registerCitizenAccount({
         name: body.name ?? "",
         email: body.email ?? "",
@@ -26,8 +27,9 @@ export async function POST(request: Request) {
         mobile: body.mobile,
       }),
     );
+    await sendRegistrationConfirmEmail(confirm.email, confirm.name, confirm.token);
     return jsonOk({
-      email: session.email,
+      email: confirm.email,
       message: "Check your email and confirm your address to finish registration.",
     });
   } catch (error) {

@@ -1,9 +1,7 @@
 "use client";
 
 import { CredentialsLoginForm } from "@/components/forms/CredentialsLoginForm";
-import { DEMO_OFFICIAL_STAFF_ID, DEMO_PASSWORD } from "@/constants/auth";
 import { routes } from "@/constants/routes";
-import { staffLoginEmail } from "@/lib/auth-rules";
 import Link from "next/link";
 
 type OfficialLoginFormProps = {
@@ -19,7 +17,7 @@ export function OfficialLoginForm({
     <CredentialsLoginForm
       role="official"
       heading={heading}
-      description={`Staff sign in with the office-issued email and password. Citizen accounts cannot open this desk. Demo: ${staffLoginEmail(DEMO_OFFICIAL_STAFF_ID)}, password ${DEMO_PASSWORD}.`}
+      description="Staff sign in with the office-issued email and password. Citizen accounts cannot open this desk."
       submitLabel="Open official portal"
       nextPath={nextPath}
       footer={

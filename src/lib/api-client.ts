@@ -23,18 +23,31 @@ function messageFromBody(body: unknown, fallback: string) {
 }
 
 export async function apiRequest<T>(path: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(`${apiBaseUrl}${path}`, {
-    ...init,
-    credentials: "include",
-    headers: {
-      Accept: "application/json",
-      ...(init?.body ? { "Content-Type": "application/json" } : {}),
-      ...init?.headers,
-    },
-  });
-  const body: unknown = await response.json().catch(() => ({}));
-  if (!response.ok) {
-    throw new ApiError(messageFromBody(body, "Request failed."), response.status);
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 15000);
+  try {
+    const response = await fetch(`${apiBaseUrl}${path}`, {
+      ...init,
+      credentials: "include",
+      signal: init?.signal ?? controller.signal,
+      headers: {
+        Accept: "application/json",
+        ...(init?.body ? { "Content-Type": "application/json" } : {}),
+        ...init?.headers,
+      },
+    });
+    const body: unknown = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      throw new ApiError(messageFromBody(body, "Request failed."), response.status);
+    }
+    return body as T;
+  } catch (error) {
+    if (error instanceof ApiError) throw error;
+    if (error instanceof Error && error.name === "AbortError") {
+      throw new ApiError("The request timed out. Try again.", 408);
+    }
+    throw error;
+  } finally {
+    clearTimeout(timeout);
   }
-  return body as T;
 }

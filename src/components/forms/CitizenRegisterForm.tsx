@@ -82,7 +82,7 @@ export function CitizenRegisterForm() {
           required
         />
       </Field>
-      <Field id="reg-password" label="Password" required hint="At least 8 characters, with letters and numbers.">
+      <Field id="reg-password" label="Password" required hint="At least 8 characters, with letters, numbers, and a symbol.">
         <PasswordInput
           id="reg-password"
           name="password"

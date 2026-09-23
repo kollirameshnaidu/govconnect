@@ -30,7 +30,7 @@ export const GUIDELINE_GROUPS = [
     items: [
       "Identify the correct office and department. If unsure, submit to the nearest office; officials can transfer the request.",
       "A preferred date is only a request. Do not travel until a confirmed date and time are assigned.",
-      "Keep PDF or JPEG copies ready. Each file may be up to 10 MB.",
+      "Keep PDF or JPEG copies ready. Each file should be 10 MB or smaller. This portal records file names for the official; files are not stored yet.",
     ],
   },
   {

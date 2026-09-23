@@ -45,6 +45,27 @@ export function canConfirmVisit(status: Status) {
   return CONFIRM_STATUSES.has(status);
 }
 
+export function canCancelAppointment(status: Status) {
+  return (
+    status === AppointmentStatus.SUBMITTED ||
+    status === AppointmentStatus.UNDER_REVIEW ||
+    status === AppointmentStatus.TRANSFERRED ||
+    status === AppointmentStatus.ACCEPTED ||
+    status === AppointmentStatus.SCHEDULED ||
+    status === AppointmentStatus.CONFIRMED ||
+    status === AppointmentStatus.RESCHEDULED ||
+    status === AppointmentStatus.RESCHEDULE_REQUESTED
+  );
+}
+
+export function canRequestReschedule(status: Status) {
+  return (
+    status === AppointmentStatus.SCHEDULED ||
+    status === AppointmentStatus.CONFIRMED ||
+    status === AppointmentStatus.RESCHEDULED
+  );
+}
+
 export function canTakeUp(status: Status) {
   return status === AppointmentStatus.SUBMITTED || status === AppointmentStatus.TRANSFERRED;
 }

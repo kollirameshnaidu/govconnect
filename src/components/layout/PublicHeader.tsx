@@ -107,7 +107,7 @@ export function PublicHeader() {
 
         <button
           type="button"
-          className="inline-flex h-11 w-11 items-center justify-center rounded-md border border-line lg:hidden"
+          className="inline-flex h-11 w-11 items-center justify-center rounded-md border border-line md:hidden"
           aria-expanded={open}
           aria-controls="mobile-navigation"
           onClick={() => setOpen((value) => !value)}
@@ -118,7 +118,7 @@ export function PublicHeader() {
       </Container>
 
       <nav className="bg-navy-800 text-white" aria-label="Primary">
-        <Container className="hidden h-12 items-center gap-1 lg:flex">
+        <Container className="hidden h-12 items-center gap-1 md:flex">
           {MAIN_NAV.map((item) => {
             const active = pathname === item.href;
             return (
@@ -139,7 +139,7 @@ export function PublicHeader() {
       </nav>
 
       {open ? (
-        <div id="mobile-navigation" className="border-t border-line bg-white lg:hidden">
+        <div id="mobile-navigation" className="border-t border-line bg-white md:hidden">
           <Container className="grid gap-1 py-3">
             {MAIN_NAV.map((item) => (
               <Link

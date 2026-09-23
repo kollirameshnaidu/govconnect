@@ -5,9 +5,10 @@ import { DEPARTMENTS, OFFICES } from "@/mock/homepage";
 import { OFFICIALS } from "@/mock/officials";
 import { api } from "@/constants/api";
 import { apiRequest, isBrowser } from "@/lib/api-client";
-import { readAdminConfig, withAdminAudit, writeAdminConfig, type AdminConfig } from "@/lib/admin-config";
+import { adminActor, mergeAdminOverlay, readAdminConfig, withAdminAudit, type AdminConfig } from "@/lib/admin-config";
 import { HOLIDAYS_2026, OFFICE_SLOT_TIMES } from "@/lib/dates";
 import { listAllAppointments } from "@/services/appointmentService";
+import { getOfficeById } from "@/services/officeService";
 import type {
   AdminSession,
   AdminStaff,
@@ -29,7 +30,7 @@ async function mutateAdminConfig(body: Record<string, unknown>) {
     method: "POST",
     body: JSON.stringify(body),
   });
-  writeAdminConfig(data.config);
+  mergeAdminOverlay(data.config);
   return data.config;
 }
 
@@ -269,6 +270,10 @@ export async function toggleAdminSlot(
     return;
   }
   await wait();
+  const office = getOfficeById(officeId);
+  if (!office || !officeInAdminScope(office, session)) {
+    throw new Error("This office is outside your administration scope.");
+  }
   const key = `${officeId}:${time}`;
   const current = readAdminConfig();
   const disabled = current.disabledSlots.includes(key)
@@ -332,6 +337,12 @@ export async function addAdminOffice(
     email: input.email.trim() || `${id}@govconnect.gov.in`,
     departmentIds: session.departmentId ? [session.departmentId] : ["revenue"],
   };
+  if (session.kind === "district" && session.district) {
+    office.district = session.district;
+  }
+  if (!officeInAdminScope(office, session)) {
+    throw new Error("This office is outside your administration scope.");
+  }
   const current = readAdminConfig();
   withAdminAudit(session, "Added office", `${office.name} (${office.district}).`, {
     offices: [office, ...current.offices],
@@ -352,6 +363,15 @@ export async function addAdminOfficial(
   if (name.length < 3) throw new Error("Enter the official’s name.");
   if (staffId.length < 6) throw new Error("Enter a staff ID.");
   const current = readAdminConfig();
+  const office = getOfficeById(input.officeId) ?? current.offices.find((item) => item.id === input.officeId);
+  if (!office || !officeInAdminScope(office, session)) {
+    throw new Error("This office is outside your administration scope.");
+  }
+  const departmentId =
+    session.kind === "department" && session.departmentId ? session.departmentId : input.departmentId;
+  if (session.kind === "department" && departmentId !== session.departmentId) {
+    throw new Error("This department is outside your administration scope.");
+  }
   const exists = [...OFFICIALS, ...current.officials].some((item) => item.staffId === staffId);
   if (exists) throw new Error("That staff ID is already issued.");
   const official: Official = {
@@ -359,7 +379,7 @@ export async function addAdminOfficial(
     name,
     designation: input.designation.trim() || "Officer",
     officeId: input.officeId,
-    departmentId: session.kind === "department" && session.departmentId ? session.departmentId : input.departmentId,
+    departmentId,
     staffId,
   };
   withAdminAudit(session, "Added official", `${official.name} (${official.staffId}).`, {
@@ -367,7 +387,8 @@ export async function addAdminOfficial(
   });
   const { hashPassword } = await import("@/server/password");
   const { provisionStaffAccount } = await import("@/server/accounts");
-  const { DEMO_PASSWORD } = await import("@/constants/auth");
+  const seededPassword = process.env.DEMO_AUTH_PASSWORD?.trim();
+  if (!seededPassword) throw new Error("DEMO_AUTH_PASSWORD is not configured.");
   provisionStaffAccount({
     id: official.id,
     role: "official",
@@ -376,7 +397,7 @@ export async function addAdminOfficial(
     designation: official.designation,
     officeId: official.officeId,
     departmentId: official.departmentId,
-    passwordHash: await hashPassword(process.env.DEMO_AUTH_PASSWORD || DEMO_PASSWORD),
+    passwordHash: await hashPassword(seededPassword),
   });
 }
 
@@ -425,6 +446,10 @@ export async function raiseEscalation(session: AdminSession, appointmentId: stri
     return;
   }
   await wait();
+  const appointment = listAllAppointments().find((item) => item.id === appointmentId);
+  if (!appointment || !appointmentInAdminScope(appointment, session)) {
+    throw new Error("This appointment is outside your administration scope.");
+  }
   const current = readAdminConfig();
   const record: EscalationRecord = {
     id: `esc-${Date.now()}`,
@@ -468,4 +493,30 @@ export async function saveAdminSettings(
       reviewHours: input.reviewHours,
     },
   );
+}
+
+export function scopedAdminConfig(admin: AdminSession): AdminConfig {
+  const full = readAdminConfig();
+  if (admin.kind === "super") return full;
+  const offices = listOfficesForAdmin(admin);
+  const officeIds = new Set(offices.map((item) => item.id));
+  const officials = listOfficialsForAdmin(admin);
+  const departments = listDepartmentsForAdmin(admin);
+  const departmentIds = new Set(departments.map((item) => item.id));
+  const scopedAppointments = new Set(listAdminAppointments(admin).map((item) => item.id));
+  const departmentHours =
+    admin.kind === "department" && admin.departmentId
+      ? { [admin.departmentId]: full.departmentHours[admin.departmentId] ?? full.reviewHours }
+      : full.departmentHours;
+  return {
+    ...full,
+    offices: full.offices.filter((item) => officeIds.has(item.id)),
+    officials: full.officials.filter((item) => officials.some((official) => official.id === item.id)),
+    departments: full.departments.filter((item) => departmentIds.has(item.id)),
+    categories: full.categories.filter((item) => departmentIds.has(item.departmentId)),
+    disabledSlots: full.disabledSlots.filter((item) => officeIds.has(item.split(":")[0] ?? "")),
+    departmentHours,
+    escalations: full.escalations.filter((item) => scopedAppointments.has(item.appointmentId)),
+    audit: full.audit.filter((item) => item.actor === adminActor(admin)),
+  };
 }

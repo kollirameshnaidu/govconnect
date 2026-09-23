@@ -1,7 +1,6 @@
 "use client";
 
 import { CredentialsLoginForm } from "@/components/forms/CredentialsLoginForm";
-import { DEMO_CITIZEN_EMAIL, DEMO_PASSWORD } from "@/constants/auth";
 import { routes } from "@/constants/routes";
 import Link from "next/link";
 
@@ -22,7 +21,7 @@ export function CitizenLoginForm({
     <CredentialsLoginForm
       role="citizen"
       heading={heading}
-      description={`Use your registered email and password. Public pages do not require login. Demo: ${DEMO_CITIZEN_EMAIL}, password ${DEMO_PASSWORD}.`}
+      description="Use your registered email and password. Public pages do not require login."
       submitLabel="Login"
       intent={intent}
       nextPath={nextPath}

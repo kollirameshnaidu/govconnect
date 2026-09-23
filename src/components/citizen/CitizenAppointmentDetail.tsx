@@ -1,6 +1,7 @@
 "use client";
 
 import { AppointmentTimeline } from "@/components/appointment/AppointmentTimeline";
+import { CitizenScheduleActions } from "@/components/appointment/CitizenScheduleActions";
 import { ConfirmVisitButton } from "@/components/appointment/ConfirmVisitButton";
 import { Alert } from "@/components/common/Alert";
 import { Button } from "@/components/common/Button";
@@ -127,6 +128,7 @@ export function CitizenAppointmentDetail({ appointmentId }: { appointmentId: str
 
       <div className="flex flex-wrap gap-2">
         <ConfirmVisitButton appointment={appointment} />
+        <CitizenScheduleActions appointment={appointment} />
         <Button href={routes.citizenAppointmentTrack(appointment.id)} variant="outline">
           Full tracking
         </Button>

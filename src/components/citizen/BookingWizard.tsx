@@ -6,6 +6,7 @@ import { useSession } from "@/components/auth/AuthProvider";
 import { Alert } from "@/components/common/Alert";
 import { Button } from "@/components/common/Button";
 import { Card } from "@/components/common/Card";
+import { EmptyState } from "@/components/common/EmptyState";
 import { Field, Input, Select, Textarea } from "@/components/common/FormControls";
 import { Icon } from "@/components/common/Icon";
 import { PreferredDateHelp } from "@/components/home/PreferredDateHelp";
@@ -224,7 +225,14 @@ export function BookingWizard({
             </Field>
           </div>
           <div className="mt-4 grid gap-3 md:grid-cols-2">
-            {offices.map((item) => (
+            {offices.length === 0 ? (
+              <EmptyState
+                className="md:col-span-2"
+                title="No offices match this search"
+                description="Try a different district or a shorter office name. Overlay offices added by an administrator also appear here."
+              />
+            ) : (
+              offices.map((item) => (
               <ChoiceCard
                 key={item.id}
                 selected={officeId === item.id}
@@ -235,7 +243,8 @@ export function BookingWizard({
                 <p>{item.address}</p>
                 <p>{item.hours}</p>
               </ChoiceCard>
-            ))}
+              ))
+            )}
           </div>
         </Card>
       ) : null}
@@ -310,7 +319,7 @@ export function BookingWizard({
             <Field
               id="book-documents"
               label="Supporting documents"
-              hint="PDF or JPEG, up to 10 MB each. Files stay in this browser for the demo."
+              hint="PDF or JPEG names are recorded for the official. Files are not uploaded to the server yet. Each file should be 10 MB or smaller."
             >
               <input
                 id="book-documents"

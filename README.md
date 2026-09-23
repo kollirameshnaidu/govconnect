@@ -11,7 +11,7 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000).
 
-Copy `.env.example` to `.env.local` and set `MONGODB_URI`, `MONGODB_DB`, and `SMTP_PASSWORD`. Do not commit `.env.local`.
+Copy `.env.example` to `.env.local` and set `MONGODB_URI`, `MONGODB_DB`, `SESSION_SECRET`, and `SMTP_PASSWORD`. Do not commit `.env.local`. Production must set `SESSION_SECRET`; local `next dev` can fall back to a development-only secret if it is empty.
 
 ## Demo sign-in
 
@@ -43,4 +43,4 @@ Appointments, admin config, accounts, and grievances persist in MongoDB Atlas (`
 | `grievances` | `POST /api/grievances` | `GET /api/grievances` (admin) | — | Not hard-deleted |
 | `admin` | Seeded as `_id: config` | `GET /api/admin` | `POST /api/admin` | Config document is replaced, not dropped |
 
-On Vercel, add `MONGODB_URI`, `MONGODB_DB`, `APP_URL`, `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD`, and `SMTP_FROM` in project settings. Use the production URL for `APP_URL`, for example `https://govconnect-black.vercel.app`.
+On Vercel, add `MONGODB_URI`, `MONGODB_DB`, `APP_URL`, `SESSION_SECRET`, `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD`, and `SMTP_FROM` in project settings. Use the production URL for `APP_URL`, for example `https://govconnect-black.vercel.app`. Optional: `DEMO_AUTH_PASSWORD` for seeded demo accounts in non-production.

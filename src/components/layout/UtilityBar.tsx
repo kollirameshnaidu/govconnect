@@ -34,9 +34,16 @@ function emitPrefs() {
   window.dispatchEvent(new Event(PREFS_EVENT));
 }
 
+function subscribeHydrate() {
+  return () => undefined;
+}
+
 export function UtilityBar() {
-  const scale = useSyncExternalStore(subscribe, getScale, () => "default" as TextScale);
-  const contrast = useSyncExternalStore(subscribe, getContrast, () => false);
+  const hydrated = useSyncExternalStore(subscribeHydrate, () => true, () => false);
+  const storedScale = useSyncExternalStore(subscribe, getScale, () => "default" as TextScale);
+  const storedContrast = useSyncExternalStore(subscribe, getContrast, () => false);
+  const scale = hydrated ? storedScale : "default";
+  const contrast = hydrated ? storedContrast : false;
 
   useEffect(() => {
     applyPrefs(scale, contrast);
@@ -61,7 +68,7 @@ export function UtilityBar() {
       <Container className="flex h-9 items-center justify-between gap-3">
         <p className="truncate">Government of India | Official appointment portal</p>
         <div className="flex items-center gap-2 sm:gap-3">
-          <div className="hidden items-center gap-1 sm:flex" role="group" aria-label="Text size">
+          <div className="flex items-center gap-1" role="group" aria-label="Text size">
             <button
               type="button"
               className={cn("px-1", scale === "small" && "font-bold text-india-saffron")}
@@ -89,7 +96,7 @@ export function UtilityBar() {
           </div>
           <button
             type="button"
-            className="hidden rounded border border-white/30 px-2 py-0.5 sm:inline"
+            className="rounded border border-white/30 px-2 py-0.5"
             onClick={toggleContrast}
             aria-pressed={contrast}
           >

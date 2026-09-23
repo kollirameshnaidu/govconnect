@@ -22,7 +22,7 @@ export function AdminUsers() {
       <div className="grid gap-6">
         <AdminHeader
           title="Users"
-          description="Staff identities that can sign in. Citizen mobile login cannot open this portal. Administrators cannot assign a confirmed slot."
+          description="Staff identities that can sign in. Citizen accounts cannot open this portal. Administrators cannot assign a confirmed slot."
         />
         {!ready ? (
           <p className="text-sm text-muted">Loading users…</p>

@@ -46,9 +46,17 @@ export async function resetPasswordWithToken(token: string, password: string, co
 }
 
 export async function updateCitizenProfile(input: { name: string; email: string }) {
-  const data = await apiRequest<{ session: CitizenSession }>(api.profile, {
+  const data = await apiRequest<{ session: CitizenSession; message?: string }>(api.profile, {
     method: "POST",
     body: JSON.stringify(input),
   });
-  return data.session;
+  return data;
+}
+
+export async function updateStaffProfile(input: { name: string }) {
+  const data = await apiRequest<{ session: AppSession; message?: string }>(api.profile, {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+  return data;
 }

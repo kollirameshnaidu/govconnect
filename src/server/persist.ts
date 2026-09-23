@@ -58,15 +58,6 @@ async function loadStore() {
       await appointments.insertMany(seed.map(appointmentDoc));
     }
     appointmentItems = seed;
-  } else {
-    const savedIds = new Set(appointmentItems.map((item) => item.id));
-    const missing = TRACKED_APPOINTMENTS.filter((item) => !savedIds.has(item.id)).map((item) => ({
-      ...item,
-    }));
-    if (missing.length) {
-      await appointments.insertMany(missing.map(appointmentDoc));
-      appointmentItems = [...appointmentItems, ...missing];
-    }
   }
 
   const savedAccounts = (await accounts.find().toArray())
@@ -123,23 +114,46 @@ async function upsertDocs(name: "appointments" | "accounts" | "grievances", docs
   await db.collection<StringIdDoc>(name).bulkWrite(operations);
 }
 
-async function saveStore() {
+async function saveStore(before: {
+  appointments: Map<string, TrackedAppointment>;
+  accounts: Map<string, AuthAccount>;
+  grievances: Map<string, Grievance>;
+  admin: AdminConfig;
+}) {
   const store = getRuntimeStore();
   const db = await getMongoDb();
-  await upsertDocs("appointments", store.appointments.map(appointmentDoc));
-  await upsertDocs("accounts", store.accounts.map(accountDoc));
-  await upsertDocs("grievances", store.grievances.map(grievanceDoc));
-  await db
-    .collection<StringIdDoc>("admin")
-    .replaceOne({ _id: ADMIN_CONFIG_ID }, adminDoc(store.admin), { upsert: true });
+  await upsertDocs(
+    "appointments",
+    store.appointments.filter((item) => before.appointments.get(item.id) !== item).map(appointmentDoc),
+  );
+  await upsertDocs(
+    "accounts",
+    store.accounts.filter((item) => before.accounts.get(item.id) !== item).map(accountDoc),
+  );
+  await upsertDocs(
+    "grievances",
+    store.grievances.filter((item) => before.grievances.get(item.id) !== item).map(grievanceDoc),
+  );
+  if (store.admin !== before.admin) {
+    await db
+      .collection<StringIdDoc>("admin")
+      .replaceOne({ _id: ADMIN_CONFIG_ID }, adminDoc(store.admin), { upsert: true });
+  }
 }
 
 export function withStore<T>(fn: () => T | Promise<T>, options: StoreOptions = {}): Promise<T> {
   const write = options.write !== false;
   const run = queue.then(async () => {
     await loadStore();
+    const store = getRuntimeStore();
+    const before = {
+      appointments: new Map(store.appointments.map((item) => [item.id, item])),
+      accounts: new Map(store.accounts.map((item) => [item.id, item])),
+      grievances: new Map(store.grievances.map((item) => [item.id, item])),
+      admin: store.admin,
+    };
     const result = await fn();
-    if (write) await saveStore();
+    if (write) await saveStore(before);
     return result;
   });
   queue = run.then(

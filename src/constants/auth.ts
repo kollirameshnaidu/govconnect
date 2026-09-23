@@ -6,4 +6,3 @@ export const DEMO_CITIZEN_EMAIL = "priya.sharma@example.in";
 export const DEMO_OFFICIAL_STAFF_ID = "REV-1101";
 export const DEMO_FRONT_DESK_STAFF_ID = "FD-1101";
 export const DEMO_ADMIN_STAFF_ID = "ADM-1101";
-export const DEMO_PASSWORD = "GovConnect@2026";

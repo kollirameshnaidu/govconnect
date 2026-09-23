@@ -2,10 +2,10 @@ import { DEMO_CITIZEN } from "@/mock/citizens";
 import { ADMIN_STAFF } from "@/mock/admin";
 import { FRONT_DESK_STAFF } from "@/mock/front-desk";
 import { OFFICIALS } from "@/mock/officials";
-import { DEMO_PASSWORD } from "@/constants/auth";
 import { normalizeEmail, staffLoginEmail } from "@/lib/auth-rules";
 import { getRuntimeStore } from "@/lib/runtime-store";
 import { hashPassword } from "@/server/password";
+import { demoAuthPassword } from "@/server/demo-password";
 import type { AdminKind, AppSession, AuthAccount, UserRole } from "@/types";
 
 export function publicAccount(account: AuthAccount): AuthAccount {
@@ -27,6 +27,7 @@ export function toSession(account: AuthAccount): AppSession {
       officeId: account.officeId ?? "",
       departmentId: account.departmentId ?? "",
       staffId: account.staffId ?? "",
+      v: account.sessionVersion ?? 0,
     };
   }
   if (account.role === "frontdesk") {
@@ -37,6 +38,7 @@ export function toSession(account: AuthAccount): AppSession {
       designation: account.designation ?? "Front desk clerk",
       officeId: account.officeId ?? "",
       staffId: account.staffId ?? "",
+      v: account.sessionVersion ?? 0,
     };
   }
   if (account.role === "admin") {
@@ -49,6 +51,7 @@ export function toSession(account: AuthAccount): AppSession {
       kind: (account.kind ?? "super") as AdminKind,
       departmentId: account.departmentId,
       district: account.district,
+      v: account.sessionVersion ?? 0,
     };
   }
   return {
@@ -57,12 +60,28 @@ export function toSession(account: AuthAccount): AppSession {
     name: account.name,
     mobile: account.mobile ?? "",
     email: account.email,
+    v: account.sessionVersion ?? 0,
   };
 }
 
 export function findAccountByEmail(email: string) {
   const normalized = normalizeEmail(email);
   return getRuntimeStore().accounts.find((item) => normalizeEmail(item.email) === normalized);
+}
+
+export function findAccountById(id: string) {
+  return getRuntimeStore().accounts.find((item) => item.id === id);
+}
+
+export function assertLiveSession(session: AppSession): AppSession {
+  const account = findAccountById(session.id);
+  if (!account || account.role !== session.role) {
+    throw new Error("Sign in to continue.");
+  }
+  if ((account.sessionVersion ?? 0) !== (session.v ?? 0)) {
+    throw new Error("Sign in to continue.");
+  }
+  return toSession(account);
 }
 
 export function findAccountByMobile(mobile: string) {
@@ -87,13 +106,13 @@ export function saveAccount(account: AuthAccount) {
   store.accounts = [account, ...store.accounts.filter((item) => item.id !== account.id)];
 }
 
-function demoPassword() {
-  return process.env.DEMO_AUTH_PASSWORD || DEMO_PASSWORD;
+function seedPassword() {
+  return demoAuthPassword();
 }
 
 export async function seedAuthAccounts(existing: AuthAccount[]) {
   const next = [...existing];
-  const demoHash = await hashPassword(demoPassword());
+  const demoHash = await hashPassword(seedPassword());
 
   function upsert(account: Omit<AuthAccount, "passwordHash"> & { passwordHash?: string }) {
     const email = normalizeEmail(account.email);
@@ -195,6 +214,7 @@ export function accountFromLegacy(document: Record<string, unknown>, fallbackRol
     emailVerifyTokenHash: document.emailVerifyTokenHash ? String(document.emailVerifyTokenHash) : undefined,
     emailVerifyExpiresAt:
       typeof document.emailVerifyExpiresAt === "number" ? document.emailVerifyExpiresAt : undefined,
+    sessionVersion: typeof document.sessionVersion === "number" ? document.sessionVersion : 0,
   };
 }
 

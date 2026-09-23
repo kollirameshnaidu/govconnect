@@ -1,40 +1,41 @@
 "use client";
 
-import { useCallback, useRef, useSyncExternalStore } from "react";
+import { useEffect, useState } from "react";
 import { api } from "@/constants/api";
 import { AUTH_EVENT } from "@/constants/auth";
 import { apiRequest } from "@/lib/api-client";
 import {
   clearBrowserSession,
+  isBrowserSignedOut,
   readBrowserSession,
   sessionsEqual,
   writeBrowserSession,
 } from "@/lib/session";
 import type { AppSession, CitizenSession, FrontDeskSession, OfficialSession, AdminSession } from "@/types";
 
-function subscribe(onChange: () => void) {
-  window.addEventListener("storage", onChange);
-  window.addEventListener(AUTH_EVENT, onChange);
-  return () => {
-    window.removeEventListener("storage", onChange);
-    window.removeEventListener(AUTH_EVENT, onChange);
-  };
+function liveSession(initial: AppSession | null) {
+  if (isBrowserSignedOut()) return null;
+  return readBrowserSession() ?? initial;
 }
 
 export function useAppSession(initial: AppSession | null = null) {
-  const snapshotRef = useRef(initial);
+  const [session, setSession] = useState(initial);
 
-  const getSnapshot = useCallback(() => {
-    const next = readBrowserSession();
-    if (!next) return snapshotRef.current;
-    if (sessionsEqual(snapshotRef.current, next)) return snapshotRef.current;
-    snapshotRef.current = next;
-    return snapshotRef.current;
-  }, []);
+  useEffect(() => {
+    function sync() {
+      const next = liveSession(initial);
+      setSession((current) => (sessionsEqual(current, next) ? current : next));
+    }
+    sync();
+    window.addEventListener("storage", sync);
+    window.addEventListener(AUTH_EVENT, sync);
+    return () => {
+      window.removeEventListener("storage", sync);
+      window.removeEventListener(AUTH_EVENT, sync);
+    };
+  }, [initial]);
 
-  const getServerSnapshot = useCallback(() => snapshotRef.current, []);
-
-  return useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
+  return session;
 }
 
 export function useCitizenSession(initial: AppSession | null = null) {

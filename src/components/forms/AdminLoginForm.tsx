@@ -1,9 +1,7 @@
 "use client";
 
 import { CredentialsLoginForm } from "@/components/forms/CredentialsLoginForm";
-import { DEMO_ADMIN_STAFF_ID, DEMO_PASSWORD } from "@/constants/auth";
 import { routes } from "@/constants/routes";
-import { staffLoginEmail } from "@/lib/auth-rules";
 import Link from "next/link";
 
 type AdminLoginFormProps = {
@@ -16,7 +14,7 @@ export function AdminLoginForm({ heading = "Admin sign-in", nextPath }: AdminLog
     <CredentialsLoginForm
       role="admin"
       heading={heading}
-      description={`Super, district, and department administrators share this portal with a permission map. Administrators do not assign a confirmed appointment slot. Demo: ${staffLoginEmail(DEMO_ADMIN_STAFF_ID)}, password ${DEMO_PASSWORD}.`}
+      description="Super, district, and department administrators share this portal with a permission map. Administrators do not assign a confirmed appointment slot."
       submitLabel="Open admin portal"
       nextPath={nextPath}
       footer={

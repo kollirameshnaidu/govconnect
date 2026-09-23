@@ -1,12 +1,11 @@
 import { cookies } from "next/headers";
 import { SESSION_COOKIE, SESSION_MAX_AGE_SECONDS } from "@/constants/auth";
+import { parseSignedSession, serializeSessionCookie } from "@/lib/session-cookie";
 import {
   isAdminSession,
   isCitizenSession,
   isFrontDeskSession,
   isOfficialSession,
-  parseSession,
-  serializeSession,
 } from "@/lib/session";
 import type { AdminSession, AppSession, CitizenSession, FrontDeskSession, OfficialSession } from "@/types";
 
@@ -36,12 +35,12 @@ export function errorResponse(error: unknown, fallback = "Request failed.") {
 
 export async function getRequestSession(): Promise<AppSession | null> {
   const jar = await cookies();
-  return parseSession(jar.get(SESSION_COOKIE)?.value);
+  return parseSignedSession(jar.get(SESSION_COOKIE)?.value);
 }
 
 export async function setSessionCookie(session: AppSession) {
   const jar = await cookies();
-  jar.set(SESSION_COOKIE, serializeSession(session), {
+  jar.set(SESSION_COOKIE, await serializeSessionCookie(session), {
     path: "/",
     maxAge: SESSION_MAX_AGE_SECONDS,
     sameSite: "lax",

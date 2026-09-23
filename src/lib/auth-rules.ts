@@ -17,6 +17,9 @@ export function passwordIssue(password: string) {
   if (!/[A-Za-z]/.test(password) || !/\d/.test(password)) {
     return "Use letters and numbers in your password.";
   }
+  if (!/[^A-Za-z0-9]/.test(password)) {
+    return "Include a symbol such as @, #, or !.";
+  }
   return "";
 }
 

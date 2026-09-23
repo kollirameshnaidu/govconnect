@@ -4,18 +4,22 @@ import { FormEvent, useState } from "react";
 import { Alert } from "@/components/common/Alert";
 import { Button } from "@/components/common/Button";
 import { Field, Input, Select, Textarea } from "@/components/common/FormControls";
+import { api } from "@/constants/api";
+import { apiRequest } from "@/lib/api-client";
 
 export function ContactForm() {
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState("");
+  const [pending, setPending] = useState(false);
 
-  function onSubmit(event: FormEvent<HTMLFormElement>) {
+  async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const data = new FormData(event.currentTarget);
     const name = String(data.get("name") ?? "").trim();
     const mobile = String(data.get("mobile") ?? "");
     const message = String(data.get("message") ?? "").trim();
     const email = String(data.get("email") ?? "").trim();
+    const topic = String(data.get("topic") ?? "other");
     if (name.length < 3) {
       setError("Enter your full name.");
       return;
@@ -33,13 +37,29 @@ export function ContactForm() {
       return;
     }
     setError("");
-    setSubmitted(true);
+    setPending(true);
+    try {
+      await apiRequest(api.grievances, {
+        method: "POST",
+        body: JSON.stringify({
+          name,
+          mobile,
+          type: topic,
+          details: email ? `${message}\n\nEmail: ${email}` : message,
+        }),
+      });
+      setSubmitted(true);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not send the message.");
+    } finally {
+      setPending(false);
+    }
   }
 
   if (submitted) {
     return (
-      <Alert tone="success" title="Message recorded">
-        This is a demo submission. Helpline staff cannot assign a confirmed
+      <Alert tone="success" title="Message received">
+        Helpline staff received this message. They cannot assign a confirmed
         appointment slot. Use Book appointment to submit a request.
       </Alert>
     );
@@ -74,7 +94,9 @@ export function ContactForm() {
       <Field id="contact-message" label="Message" required>
         <Textarea id="contact-message" name="message" required />
       </Field>
-      <Button type="submit">Send message</Button>
+      <Button type="submit" disabled={pending}>
+        {pending ? "Sending…" : "Send message"}
+      </Button>
     </form>
   );
 }

@@ -6,12 +6,13 @@ import { EmptyState } from "@/components/common/EmptyState";
 import { useSession } from "@/components/auth/AuthProvider";
 import { routes } from "@/constants/routes";
 import { isOfficialSession } from "@/lib/session";
-import { getNotificationsForOfficial } from "@/services/notificationService";
+import { useNotifications } from "@/lib/use-notifications";
+import type { OfficialNotification } from "@/types";
 
 export function OfficialNotificationList() {
   const session = useSession();
   const official = isOfficialSession(session) ? session : null;
-  const items = official ? getNotificationsForOfficial(official.id) : [];
+  const { items, loading } = useNotifications<OfficialNotification>();
 
   if (!official) return null;
 
@@ -23,7 +24,9 @@ export function OfficialNotificationList() {
           New inbox items, accepted requests waiting for a slot, and citizen confirmations.
         </p>
       </header>
-      {items.length === 0 ? (
+      {loading ? (
+        <p className="text-sm text-muted">Loading notifications…</p>
+      ) : items.length === 0 ? (
         <EmptyState
           icon="bell"
           title="No alerts yet"

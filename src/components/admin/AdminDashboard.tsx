@@ -17,13 +17,15 @@ import {
   listOfficesForAdmin,
   reviewHoursForAdmin,
 } from "@/services/adminService";
-import { getNotificationsForAdmin } from "@/services/notificationService";
 import { getDepartmentById } from "@/services/departmentService";
+import { useNotifications } from "@/lib/use-notifications";
+import type { AdminNotification } from "@/types";
 
 export function AdminDashboard() {
   const admin = useAdmin();
   const { ready: configReady } = useAdminConfig();
   const { items, ready } = useCreatedAppointments();
+  const { items: notifications, loading: notificationsLoading } = useNotifications<AdminNotification>();
 
   if (!admin) return null;
   if (!ready || !configReady) {
@@ -38,7 +40,6 @@ export function AdminDashboard() {
   const escalations = listEscalationRecords(admin, appointments).filter(
     (item) => item.status === "open",
   );
-  const notifications = getNotificationsForAdmin(admin);
   const department = admin.departmentId ? getDepartmentById(admin.departmentId) : undefined;
 
   return (
@@ -81,7 +82,9 @@ export function AdminDashboard() {
         </Card>
         <Card>
           <h2 className="text-lg font-semibold text-navy-900">Alerts</h2>
-          {notifications.length === 0 ? (
+          {notificationsLoading ? (
+            <p className="mt-2 text-sm text-muted">Loading alerts…</p>
+          ) : notifications.length === 0 ? (
             <p className="mt-2 text-sm text-muted">No administrator alerts.</p>
           ) : (
             <ul className="mt-3 grid gap-2 text-sm">

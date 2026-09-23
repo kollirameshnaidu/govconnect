@@ -1,6 +1,14 @@
 "use client";
 
-import type { InputHTMLAttributes, ReactNode, SelectHTMLAttributes, TextareaHTMLAttributes } from "react";
+import {
+  cloneElement,
+  isValidElement,
+  type InputHTMLAttributes,
+  type ReactElement,
+  type ReactNode,
+  type SelectHTMLAttributes,
+  type TextareaHTMLAttributes,
+} from "react";
 import { useState } from "react";
 import { cn } from "@/lib/cn";
 
@@ -14,6 +22,15 @@ type FieldProps = {
 };
 
 export function Field({ id, label, hint, error, required, children }: FieldProps) {
+  const describedBy = [hint ? `${id}-hint` : "", error ? `${id}-error` : ""].filter(Boolean).join(" ") || undefined;
+  const control = isValidElement(children)
+    ? cloneElement(children as ReactElement<{ id?: string; "aria-describedby"?: string; "aria-invalid"?: boolean }>, {
+        id: (children as ReactElement<{ id?: string }>).props.id ?? id,
+        "aria-describedby": describedBy,
+        "aria-invalid": error ? true : undefined,
+      })
+    : children;
+
   return (
     <div className="grid gap-1.5">
       <label htmlFor={id} className="text-sm font-semibold text-ink">
@@ -28,7 +45,7 @@ export function Field({ id, label, hint, error, required, children }: FieldProps
       <div
         className={cn(error && "[&_input]:border-danger [&_select]:border-danger [&_textarea]:border-danger")}
       >
-        {children}
+        {control}
       </div>
       {hint ? (
         <p id={`${id}-hint`} className="text-xs text-muted">
@@ -62,6 +79,7 @@ export function PasswordInput({
   autoComplete = "current-password",
   placeholder = "Password",
   required,
+  ...props
 }: {
   id: string;
   name?: string;
@@ -70,7 +88,7 @@ export function PasswordInput({
   autoComplete?: string;
   placeholder?: string;
   required?: boolean;
-}) {
+} & Omit<InputHTMLAttributes<HTMLInputElement>, "type" | "value" | "onChange" | "id" | "name">) {
   const [visible, setVisible] = useState(false);
   return (
     <div className="relative">
@@ -83,7 +101,8 @@ export function PasswordInput({
         autoComplete={autoComplete}
         placeholder={placeholder}
         required={required}
-        className="pr-16"
+        {...props}
+        className={cn("pr-16", props.className)}
       />
       <button
         type="button"

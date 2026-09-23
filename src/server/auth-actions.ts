@@ -9,13 +9,14 @@ import {
 } from "@/lib/auth-rules";
 import {
   findAccountByEmail,
+  findAccountById,
   findAccountByMobile,
   findAccountByResetHash,
   findAccountByVerifyHash,
   saveAccount,
   toSession,
 } from "@/server/accounts";
-import { isSmtpConfigured, sendRegistrationConfirmEmail } from "@/server/mail";
+import { isSmtpConfigured } from "@/server/mail";
 import { hashPassword, verifyPassword } from "@/server/password";
 import { createResetToken, hashResetToken } from "@/server/reset-token";
 import type { AppSession, CitizenSession, UserRole } from "@/types";
@@ -50,7 +51,7 @@ export async function registerCitizenAccount(input: {
   password: string;
   confirmPassword?: string;
   mobile?: string;
-}): Promise<CitizenSession> {
+}): Promise<{ session: CitizenSession; confirm: { email: string; name: string; token: string } }> {
   const name = input.name.trim();
   const email = normalizeEmail(input.email);
   const mobile = (input.mobile ?? "").replace(/\D/g, "");
@@ -63,18 +64,23 @@ export async function registerCitizenAccount(input: {
   if (input.confirmPassword !== undefined && input.confirmPassword !== password) {
     throw new Error("The passwords do not match.");
   }
-  if (findAccountByEmail(email)) {
-    throw new Error("An account with this email already exists. Sign in or reset your password.");
-  }
-  if (findAccountByMobile(mobile)) {
-    throw new Error("An account with this mobile number already exists. Sign in instead.");
-  }
   if (!isSmtpConfigured()) {
     throw new Error("Email is not configured.");
   }
+  const existingEmail = findAccountByEmail(email);
+  const existingMobile = findAccountByMobile(mobile);
+  const sameUnverified =
+    existingEmail &&
+    existingEmail.role === "citizen" &&
+    existingEmail.emailVerified !== true &&
+    existingEmail.mobile === mobile &&
+    (!existingMobile || existingMobile.id === existingEmail.id);
+  if ((existingEmail || existingMobile) && !sameUnverified) {
+    throw new Error("Could not create this account. Sign in or reset your password.");
+  }
   const token = createResetToken();
   const account = {
-    id: mobile === DEMO_CITIZEN.mobile ? DEMO_CITIZEN.id : `citizen-${mobile}`,
+    id: existingEmail?.id ?? (mobile === DEMO_CITIZEN.mobile ? DEMO_CITIZEN.id : `citizen-${mobile}`),
     role: "citizen" as const,
     email,
     passwordHash: await hashPassword(password),
@@ -83,10 +89,13 @@ export async function registerCitizenAccount(input: {
     emailVerified: false,
     emailVerifyTokenHash: hashResetToken(token),
     emailVerifyExpiresAt: Date.now() + CONFIRM_TOKEN_TTL_MS,
+    sessionVersion: existingEmail?.sessionVersion ?? 0,
   };
   saveAccount(account);
-  await sendRegistrationConfirmEmail(email, name, token);
-  return toSession(account) as CitizenSession;
+  return {
+    session: toSession(account) as CitizenSession,
+    confirm: { email, name, token },
+  };
 }
 
 export async function issuePasswordReset(email: string) {
@@ -116,7 +125,11 @@ export async function resetPasswordWithToken(token: string, password: string, co
   if (!token.trim()) throw new Error("This reset link is invalid or has expired.");
   const account = findAccountByResetHash(hashResetToken(token.trim()));
   if (!account) throw new Error("This reset link is invalid or has expired.");
-  const next = { ...account, passwordHash: await hashPassword(password) };
+  const next = {
+    ...account,
+    passwordHash: await hashPassword(password),
+    sessionVersion: (account.sessionVersion ?? 0) + 1,
+  };
   delete next.resetTokenHash;
   delete next.resetExpiresAt;
   saveAccount(next);
@@ -138,7 +151,7 @@ export async function confirmCitizenEmail(token: string): Promise<CitizenSession
 export async function updateCitizenAccount(
   session: CitizenSession,
   input: { name: string; email: string },
-): Promise<CitizenSession> {
+): Promise<{ session: CitizenSession; confirm?: { email: string; name: string; token: string } }> {
   const name = input.name.trim();
   const email = normalizeEmail(input.email);
   if (name.length < 3) throw new Error("Enter your full name.");
@@ -147,9 +160,29 @@ export async function updateCitizenAccount(
   if (!account || account.id !== session.id) throw new Error("Sign in to continue.");
   const taken = findAccountByEmail(email);
   if (taken && taken.id !== account.id) {
-    throw new Error("An account with this email already exists.");
+    throw new Error("Could not save this email address.");
   }
+  const emailChanged = email !== normalizeEmail(account.email);
   const next = { ...account, name, email };
+  let confirm: { email: string; name: string; token: string } | undefined;
+  if (emailChanged) {
+    if (!isSmtpConfigured()) throw new Error("Email is not configured.");
+    const token = createResetToken();
+    next.emailVerified = false;
+    next.emailVerifyTokenHash = hashResetToken(token);
+    next.emailVerifyExpiresAt = Date.now() + CONFIRM_TOKEN_TTL_MS;
+    confirm = { email, name, token };
+  }
   saveAccount(next);
-  return toSession(next) as CitizenSession;
+  return { session: toSession(next) as CitizenSession, confirm };
+}
+
+export async function updateStaffAccount(session: AppSession, name: string): Promise<AppSession> {
+  const trimmed = name.trim();
+  if (trimmed.length < 3) throw new Error("Enter the display name used on appointment records.");
+  const account = findAccountById(session.id);
+  if (!account || account.role !== session.role) throw new Error("Sign in to continue.");
+  const next = { ...account, name: trimmed };
+  saveAccount(next);
+  return toSession(next);
 }

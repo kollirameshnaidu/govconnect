@@ -14,13 +14,15 @@ import { isScheduledVisit } from "@/lib/appointment-lifecycle";
 import { isFrontDeskSession } from "@/lib/session";
 import { useFrontDeskAppointments } from "@/lib/use-citizen-appointments";
 import { listFrontDeskQueue } from "@/services/appointmentService";
-import { getNotificationsForFrontDesk } from "@/services/notificationService";
 import { getOfficeById } from "@/services/officeService";
+import { useNotifications } from "@/lib/use-notifications";
+import type { FrontDeskNotification } from "@/types";
 
 export function FrontDeskDashboard() {
   const session = useSession();
   const staff = isFrontDeskSession(session) ? session : null;
   const { appointments, ready } = useFrontDeskAppointments(staff);
+  const { items: notifications, loading: notificationsLoading } = useNotifications<FrontDeskNotification>();
 
   if (!staff) return null;
   if (!ready) {
@@ -28,7 +30,6 @@ export function FrontDeskDashboard() {
   }
 
   const office = getOfficeById(staff.officeId);
-  const notifications = getNotificationsForFrontDesk(staff.id);
   const queue = listFrontDeskQueue(staff, appointments);
   const confirmed = appointments.filter((item) => item.status === AppointmentStatus.CONFIRMED);
   const visits = appointments.filter((item) => isScheduledVisit(item.status));
@@ -118,7 +119,9 @@ export function FrontDeskDashboard() {
 
       <section>
         <h2 className="mb-3 text-lg font-semibold text-navy-900">Alerts</h2>
-        {notifications.length === 0 ? (
+        {notificationsLoading ? (
+          <p className="text-sm text-muted">Loading alerts…</p>
+        ) : notifications.length === 0 ? (
           <EmptyState icon="bell" title="No alerts" description="Check-in and queue updates appear here." />
         ) : (
           <ul className="grid gap-3">

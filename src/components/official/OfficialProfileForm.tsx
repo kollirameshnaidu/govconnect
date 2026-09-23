@@ -8,6 +8,7 @@ import { Card } from "@/components/common/Card";
 import { Field, Input } from "@/components/common/FormControls";
 import { setOfficialSession } from "@/lib/auth-store";
 import { isOfficialSession } from "@/lib/session";
+import { updateStaffProfile } from "@/services/authService";
 import { getDepartmentById } from "@/services/departmentService";
 import { getOfficeById } from "@/services/officeService";
 
@@ -23,19 +24,22 @@ export function OfficialProfileForm() {
   const office = getOfficeById(desk.officeId);
   const department = getDepartmentById(desk.departmentId);
 
-  function onSubmit(event: FormEvent) {
+  async function onSubmit(event: FormEvent) {
     event.preventDefault();
     if (name.trim().length < 3) {
       setError("Enter the display name used on appointment letters.");
       setSuccess("");
       return;
     }
-    setOfficialSession({
-      ...desk,
-      name: name.trim(),
-    });
-    setError("");
-    setSuccess("Profile updated for this demo session.");
+    try {
+      const data = await updateStaffProfile({ name: name.trim() });
+      if (isOfficialSession(data.session)) setOfficialSession(data.session);
+      setError("");
+      setSuccess(data.message || "Profile saved.");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not save the profile.");
+      setSuccess("");
+    }
   }
 
   return (
